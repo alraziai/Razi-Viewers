@@ -31,6 +31,10 @@ export const cornerstone = {
   viewport: '@ohif/extension-cornerstone.viewportModule.cornerstone',
 };
 
+export const aiOverlays = {
+  panel: '@ohif/extension-ai-overlays.panelModule.ai-overlays-panel',
+};
+
 export const dicomsr = {
   sopClassHandler: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr',
   sopClassHandler3D: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr-3d',
@@ -271,7 +275,11 @@ export const basicLayout = {
   props: {
     leftPanels: [ohif.thumbnailList],
     leftPanelResizable: true,
-    rightPanels: [cornerstone.segmentation, cornerstone.measurements],
+    rightPanels: [
+      cornerstone.segmentation,
+      cornerstone.measurements,
+      '@ohif/extension-ai-overlays.panelModule.ai-overlays-panel',
+    ],
     rightPanelClosed: true,
     rightPanelResizable: true,
     viewports: [
@@ -308,7 +316,7 @@ export const basicLayout = {
 };
 
 export function layoutTemplate() {
-  return structuredCloneWithFunctions(this.layoutInstance);
+  return structuredCloneWithFunctions(basicLayout);
 }
 
 export const basicRoute = {

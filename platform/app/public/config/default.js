@@ -4,7 +4,7 @@ window.config = {
   name: 'config/default.js',
   routerBasename: null,
   // whiteLabeling: {},
-  extensions: [],
+  extensions: ['@ohif/extension-ai-overlays'],
   modes: [],
   customizationService: {},
   showStudyList: true,

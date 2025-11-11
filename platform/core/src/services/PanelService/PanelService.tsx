@@ -137,10 +137,14 @@ export default class PanelService extends PubSubService {
       this._panelsGroups.set(position, panels);
     }
 
-    const panelComponent = this.getPanelData(panelId);
-
-    panels.push(panelComponent);
-    this._broadcastEvent(EVENTS.PANELS_CHANGED, { position, options });
+    try {
+      const panelComponent = this.getPanelData(panelId);
+      panels.push(panelComponent);
+      this._broadcastEvent(EVENTS.PANELS_CHANGED, { position, options });
+    } catch (error) {
+      console.error(`Error adding panel ${panelId} to ${position}:`, error);
+      throw error;
+    }
   }
 
   public addPanels(position: PanelPosition, panelsIds: string[], options): void {

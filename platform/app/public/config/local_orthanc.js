@@ -1,7 +1,7 @@
 /** @type {AppTypes.Config} */
 window.config = {
   routerBasename: null,
-  extensions: [],
+  extensions: ['@ohif/extension-ai-overlays'],
   modes: [],
   showStudyList: true,
   maxNumberOfWebWorkers: 3,
