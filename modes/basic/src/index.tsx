@@ -203,16 +203,17 @@ export function onModeExit({ servicesManager }: withAppTypes) {
 }
 
 export const toolbarSections = {
+  //TODO: Add back in the toolbar buttons
   [TOOLBAR_SECTIONS.primary]: [
-    'MeasurementTools',
-    'Zoom',
-    'Pan',
-    'TrackballRotate',
-    'WindowLevel',
-    'Capture',
-    'Layout',
-    'Crosshairs',
-    'MoreTools',
+    // 'MeasurementTools',
+    // 'Zoom',
+    // 'Pan',
+    // 'TrackballRotate',
+    // 'WindowLevel',
+    // 'Capture',
+    // 'Layout',
+    // 'Crosshairs',
+    // 'MoreTools',
   ],
 
   [TOOLBAR_SECTIONS.viewportActionMenu.topLeft]: ['orientationMenu', 'dataOverlayMenu'],
