@@ -206,10 +206,10 @@ export const toolbarSections = {
   //TODO: Add back in the toolbar buttons
   [TOOLBAR_SECTIONS.primary]: [
     // 'MeasurementTools',
-    // 'Zoom',
-    // 'Pan',
+    'Zoom',
+    'Pan',
     // 'TrackballRotate',
-    // 'WindowLevel',
+    'WindowLevel',
     // 'Capture',
     // 'Layout',
     // 'Crosshairs',
