@@ -13,15 +13,17 @@ const aiOverlaysExtension: Types.Extensions.Extension = {
     return [
       {
         name: 'ai-overlays-panel',
-        iconName: 'GroupLayers',
-        iconLabel: 'AI Layers',
-        label: 'AI Layers',
+        iconName: 'Clipboard',
+        iconLabel: 'Summary',
+        label: 'Summary',
         component: OverlayPanel,
         defaultContext: ['VIEWER'],
       },
     ];
   },
-  getToolbarModule,
+  getToolbarModule({ servicesManager }) {
+    return getToolbarModule({ servicesManager });
+  },
 };
 
 export default aiOverlaysExtension;
