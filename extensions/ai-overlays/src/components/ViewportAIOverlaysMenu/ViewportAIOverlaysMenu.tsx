@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { cn, Icons, useIconPresentation, Popover, PopoverTrigger, PopoverContent, Button } from '@ohif/ui-next';
 import { useSystem } from '@ohif/core';
 import { Enums } from '@cornerstonejs/core';
@@ -42,6 +42,8 @@ function ViewportAIOverlaysMenu({
   const [enabled, setEnabled] = useState<Record<string, boolean>>({});
   const [studyUID, setStudyUID] = useState<string | null>(null);
   const [currentDisplaySetIds, setCurrentDisplaySetIds] = useState<string[]>([]);
+  const prevDisplaySetIdsRef = useRef<string[]>([]);
+  const enabledRef = useRef<Record<string, boolean>>({});
 
   // Get study UID for this viewport and get all study layers
   useEffect(() => {
@@ -149,6 +151,67 @@ function ViewportAIOverlaysMenu({
     console.log('[AI Overlays Menu] Filtered layers for current display sets:', filteredLayers.length, filteredLayers);
     setLayers(filteredLayers);
   }, [allStudyLayers, currentDisplaySetIds]);
+
+  // Keep enabledRef in sync with enabled state
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
+
+  // Automatically uncheck and hide layers from previous display set when switching
+  useEffect(() => {
+    if (!viewportId || allStudyLayers.length === 0) return;
+
+    // Check if display set IDs actually changed
+    const displaySetIdsChanged =
+      prevDisplaySetIdsRef.current.length !== currentDisplaySetIds.length ||
+      prevDisplaySetIdsRef.current.some((id, idx) => id !== currentDisplaySetIds[idx]);
+
+    if (!displaySetIdsChanged) {
+      return; // No change, skip
+    }
+
+    // Update ref
+    prevDisplaySetIdsRef.current = [...currentDisplaySetIds];
+
+    // Get IDs of layers that belong to current display sets
+    const currentLayerIds = currentDisplaySetIds.length > 0
+      ? allStudyLayers
+          .filter(layer => {
+            const layerDisplaySetId = (layer as any).displaySetId;
+            return layerDisplaySetId && currentDisplaySetIds.includes(layerDisplaySetId);
+          })
+          .map(layer => layer.id)
+      : [];
+
+    // Get current enabled state from ref (most up-to-date)
+    const currentEnabled = enabledRef.current;
+
+    // Find layers that need to be hidden (don't belong to current display set but are enabled)
+    const layersToHide = Object.keys(currentEnabled).filter(
+      layerId => currentEnabled[layerId] && !currentLayerIds.includes(layerId)
+    );
+
+    // Hide layers immediately before updating state
+    if (layersToHide.length > 0) {
+      console.log('[AI Overlays Menu] Hiding layers from previous display set:', layersToHide);
+      layersToHide.forEach(layerId => {
+        if (overlay.hasLayer?.(viewportId, layerId)) {
+          overlay.show(viewportId, layerId, false);
+        }
+      });
+    }
+
+    // Update enabled state to only keep layers for current display sets
+    setEnabled(prev => {
+      const updated: Record<string, boolean> = {};
+      currentLayerIds.forEach(layerId => {
+        if (prev[layerId]) {
+          updated[layerId] = true;
+        }
+      });
+      return updated;
+    });
+  }, [currentDisplaySetIds, allStudyLayers, viewportId, overlay]);
 
   // Detect base imageId for the viewport and listen to image changes
   useEffect(() => {
