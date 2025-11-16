@@ -111,6 +111,16 @@ const toolbarButtons: Button[] = [
     },
   },
   {
+    id: 'aiOverlaysMenu',
+    uiType: 'ohif.aiOverlaysMenu',
+    props: {
+      icon: 'GroupLayers',
+      label: 'AI Overlays',
+      tooltip: 'Toggle AI overlay layers (heatmap, mask)',
+      evaluate: 'evaluate.aiOverlaysMenu',
+    },
+  },
+  {
     id: 'windowLevelMenuEmbedded',
     uiType: 'ohif.windowLevelMenuEmbedded',
     props: {

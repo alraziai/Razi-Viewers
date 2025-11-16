@@ -1,6 +1,7 @@
 import { Types } from '@ohif/core';
 import { registerOverlayLoader } from './registerOverlayLoader';
 import OverlayPanel from './panels/OverlayPanel';
+import getToolbarModule from './getToolbarModule';
 import id from './id';
 
 const aiOverlaysExtension: Types.Extensions.Extension = {
@@ -20,6 +21,7 @@ const aiOverlaysExtension: Types.Extensions.Extension = {
       },
     ];
   },
+  getToolbarModule,
 };
 
 export default aiOverlaysExtension;
