@@ -3,6 +3,7 @@ import { cn, Icons, useIconPresentation, Popover, PopoverTrigger, PopoverContent
 import { useSystem } from '@ohif/core';
 import { Enums } from '@cornerstonejs/core';
 import { createOverlayService } from '../../overlayService';
+import { getViewportStudyUID, getStudyOverlayLayers, getDisplaySetIdentifier } from '../../utils/studyOverlays';
 
 type LayerDef = {
   id: string;
@@ -10,12 +11,9 @@ type LayerDef = {
   file: string;
   defaultOpacity?: number;
   color?: string;
+  displaySetId?: string;
+  studyUID?: string;
 };
-
-function getStudyUIDFromURL() {
-  const p = new URLSearchParams(window.location.search);
-  return p.get('StudyInstanceUIDs') || '';
-}
 
 function ViewportAIOverlaysMenu({
   location,
@@ -34,31 +32,123 @@ function ViewportAIOverlaysMenu({
   disabled?: boolean;
 }>) {
   const { servicesManager } = useSystem();
-  const { toolbarService, cornerstoneViewportService } = servicesManager.services;
+  const { toolbarService, cornerstoneViewportService, viewportGridService, displaySetService } = servicesManager.services;
   const { IconContainer, className: iconClassName, containerProps } = useIconPresentation();
   const overlay = useMemo(() => createOverlayService(servicesManager), [servicesManager]);
 
-  const [layers, setLayers] = useState<LayerDef[]>([
-    { id: 'heatmap', label: 'AI Heatmap', file: '', defaultOpacity: 0.5, color: '#ff4444' },
-    { id: 'mask', label: 'Mask', file: '', defaultOpacity: 0.35, color: '#343400' },
-  ]);
+  const [allStudyLayers, setAllStudyLayers] = useState<LayerDef[]>([]);
+  const [layers, setLayers] = useState<LayerDef[]>([]);
   const [baseImageId, setBaseImageId] = useState<string | null>(null);
   const [enabled, setEnabled] = useState<Record<string, boolean>>({});
+  const [studyUID, setStudyUID] = useState<string | null>(null);
+  const [currentDisplaySetIds, setCurrentDisplaySetIds] = useState<string[]>([]);
 
-  // Build file paths from StudyInstanceUID
+  // Get study UID for this viewport and get all study layers
   useEffect(() => {
-    const study = getStudyUIDFromURL();
-    if (!study) {
-      console.warn('No StudyInstanceUID found in URL');
+    if (!viewportId) return;
+
+    const updateStudyLayers = () => {
+      const currentStudyUID = getViewportStudyUID(viewportId, viewportGridService, displaySetService);
+      console.log('[AI Overlays Menu] Viewport study UID:', currentStudyUID, 'Viewport ID:', viewportId);
+      if (currentStudyUID) {
+        if (currentStudyUID !== studyUID) {
+          setStudyUID(currentStudyUID);
+          setEnabled({}); // Reset enabled state when study changes
+        }
+        const studyLayers = getStudyOverlayLayers(currentStudyUID, displaySetService);
+        console.log('[AI Overlays Menu] Study layers found:', studyLayers.length, studyLayers);
+        setAllStudyLayers(studyLayers);
+      } else {
+        console.log('[AI Overlays Menu] No study UID found for viewport');
+        setAllStudyLayers([]);
+      }
+    };
+
+    // Initial update
+    updateStudyLayers();
+
+    // Subscribe to display set changes
+    const subscriptions = [
+      displaySetService.subscribe(
+        displaySetService.EVENTS.DISPLAY_SETS_ADDED,
+        updateStudyLayers
+      ),
+      displaySetService.subscribe(
+        displaySetService.EVENTS.DISPLAY_SETS_CHANGED,
+        updateStudyLayers
+      ),
+      viewportGridService.subscribe(
+        viewportGridService.EVENTS.GRID_STATE_CHANGED,
+        updateStudyLayers
+      ),
+    ];
+
+    return () => {
+      subscriptions.forEach(sub => sub.unsubscribe());
+    };
+  }, [viewportId, viewportGridService, displaySetService, studyUID]);
+
+  // Get current display sets for the viewport and filter layers
+  useEffect(() => {
+    if (!viewportId) return;
+
+    const updateCurrentDisplaySets = () => {
+      const displaySetUIDs = viewportGridService.getDisplaySetsUIDsForViewport(viewportId) || [];
+      const displaySets = displaySetUIDs
+        .map(uid => displaySetService.getDisplaySetByUID(uid))
+        .filter(Boolean);
+
+      // Get display set IDs using the same function as used for layer creation
+      // This ensures we match correctly with the layer's displaySetId
+      const displaySetIds = displaySets.map(ds => getDisplaySetIdentifier(ds));
+      setCurrentDisplaySetIds(displaySetIds);
+
+      console.log('[AI Overlays Menu] Current display sets:', displaySetIds, displaySets.map(ds => ({
+        displaySetInstanceUID: ds.displaySetInstanceUID,
+        SeriesInstanceUID: ds.SeriesInstanceUID,
+        label: ds.label,
+        SeriesDescription: ds.SeriesDescription,
+      })));
+    };
+
+    // Initial update
+    updateCurrentDisplaySets();
+
+    // Subscribe to viewport display set changes
+    const subscriptions = [
+      viewportGridService.subscribe(
+        viewportGridService.EVENTS.GRID_STATE_CHANGED,
+        updateCurrentDisplaySets
+      ),
+      viewportGridService.subscribe(
+        viewportGridService.EVENTS.ACTIVE_VIEWPORT_ID_CHANGED,
+        updateCurrentDisplaySets
+      ),
+    ];
+
+    return () => {
+      subscriptions.forEach(sub => sub.unsubscribe());
+    };
+  }, [viewportId, viewportGridService, displaySetService]);
+
+  // Filter layers to only show those for current display sets
+  useEffect(() => {
+    if (currentDisplaySetIds.length === 0) {
+      setLayers([]);
       return;
     }
-    const base = `/overlays/${study}/`;
-    setLayers(prev =>
-      prev.map(l => ({ ...l, file: base + (l.id === 'heatmap' ? 'heatmap.png' : 'mask.png') }))
-    );
-    setEnabled({});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+
+    // Filter layers to only include those matching current display set IDs
+    // Each layer has a displaySetId property that matches the displaySetInstanceUID
+    const filteredLayers = allStudyLayers.filter(layer => {
+      // Extract displaySetId from layer.id (format: "heatmap-{displaySetId}" or "mask-{displaySetId}")
+      const layerDisplaySetId = (layer as any).displaySetId;
+      return layerDisplaySetId && currentDisplaySetIds.includes(layerDisplaySetId);
+    });
+
+    console.log('[AI Overlays Menu] Filtered layers for current display sets:', filteredLayers.length, filteredLayers);
+    setLayers(filteredLayers);
+  }, [allStudyLayers, currentDisplaySetIds]);
 
   // Detect base imageId for the viewport and listen to image changes
   useEffect(() => {
@@ -109,19 +199,25 @@ function ViewportAIOverlaysMenu({
     }
 
     // Small delay to ensure viewport is fully ready
-    const timeoutId = setTimeout(() => {
-      overlay.removeAll(viewportId);
+    const timeoutId = setTimeout(async () => {
+      // First, ensure all layers are added (but may be hidden)
+      for (const layer of layers) {
+        if (layer.file) {
+          // Check if layer already exists
+          const layerExists = overlay.hasLayer?.(viewportId, layer.id);
+          if (!layerExists) {
+            console.log('[AI Overlays Menu] Adding layer:', layer.id, layer.file);
+            await overlay.addLayer(viewportId, layer, baseImageId);
+          }
 
-      layers.forEach(layer => {
-        if (enabled[layer.id] && layer.file) {
-          overlay.addLayer(viewportId, layer, baseImageId);
+          // Show or hide based on enabled state
+          overlay.show(viewportId, layer.id, enabled[layer.id] || false);
         }
-      });
-    }, 50);
+      }
+    }, 100);
 
     return () => {
       clearTimeout(timeoutId);
-      overlay.removeAll(viewportId);
     };
   }, [viewportId, baseImageId, layers, enabled, overlay]);
 
@@ -173,28 +269,34 @@ function ViewportAIOverlaysMenu({
         </div>
       </PopoverTrigger>
       <PopoverContent
-        className="h-auto w-[150px] flex-shrink-0 flex-col items-start rounded p-1"
+        className="h-auto w-[250px] max-h-[400px] overflow-y-auto flex-shrink-0 flex-col items-start rounded p-1"
         align={align}
         side={side}
         style={{ left: 0 }}
       >
-        {layers.map(layer => (
-          <Button
-            key={layer.id}
-            variant="ghost"
-            className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch px-1 py-0"
-            onClick={() => handleToggle(layer.id)}
-          >
-            <div className="mr-1 flex w-6 items-center justify-start">
-              {enabled[layer.id] ? (
-                <Icons.Checked className="text-primary h-6 w-6" />
-              ) : (
-                <div className="h-6 w-6" />
-              )}
-            </div>
-            <div className="flex-1 text-left">{layer.label}</div>
-          </Button>
-        ))}
+        {layers.length === 0 ? (
+          <div className="px-2 py-2 text-sm text-white">
+            No AI overlay layers available for this study.
+          </div>
+        ) : (
+          layers.map(layer => (
+            <Button
+              key={layer.id}
+              variant="ghost"
+              className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch px-1 py-0"
+              onClick={() => handleToggle(layer.id)}
+            >
+              <div className="mr-1 flex w-6 items-center justify-start">
+                {enabled[layer.id] ? (
+                  <Icons.Checked className="text-primary h-6 w-6" />
+                ) : (
+                  <div className="h-6 w-6" />
+                )}
+              </div>
+              <div className="flex-1 text-left text-xs">{layer.label}</div>
+            </Button>
+          ))
+        )}
       </PopoverContent>
     </Popover>
   );

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSystem } from '@ohif/core';
 import { createOverlayService } from '../overlayService';
+import { getViewportStudyUID, getAllStudiesOverlayLayers } from '../utils/studyOverlays';
 
 type LayerDef = {
   id: string;
@@ -10,14 +11,9 @@ type LayerDef = {
   color?: string;
 };
 
-function getStudyUIDFromURL() {
-  const p = new URLSearchParams(window.location.search);
-  return p.get('StudyInstanceUIDs') || '';
-}
-
 export default function OverlayPanel() {
   const { servicesManager } = useSystem();
-  const { viewportGridService } = servicesManager.services;
+  const { viewportGridService, displaySetService } = servicesManager.services;
   const overlay = useMemo(() => createOverlayService(servicesManager), [servicesManager]);
 
   // Get initial active viewport ID
@@ -25,10 +21,8 @@ export default function OverlayPanel() {
     viewportGridService.getState().activeViewportId
   );
 
-  const [layers, setLayers] = useState<LayerDef[]>([
-    { id: 'heatmap', label: 'AI Heatmap', file: '', defaultOpacity: 0.5, color: '#ff4444' }, // Red tint
-    { id: 'mask', label: 'Mask', file: '', defaultOpacity: 0.35, color: '#343400' }, // Blue tint
-  ]);
+  // Get all layers from all studies
+  const [allLayers, setAllLayers] = useState<LayerDef[]>([]);
   const [baseImageId, setBaseImageId] = useState<string | null>(null);
   const [enabled, setEnabled] = useState<Record<string, boolean>>({});
 
@@ -48,21 +42,39 @@ export default function OverlayPanel() {
     };
   }, [viewportGridService]);
 
-  // Build file paths from StudyInstanceUID
+  // Get all layers from all studies and update when display sets change
   useEffect(() => {
-    const study = getStudyUIDFromURL();
-    if (!study) {
-      console.warn('No StudyInstanceUID found in URL');
-      return;
-    }
-    const base = `/overlays/${study}/`;
-    setLayers(prev =>
-      prev.map(l => ({ ...l, file: base + (l.id === 'heatmap' ? 'heatmap.png' : 'mask.png') }))
-    );
-    // Reset enabled state when study changes
-    setEnabled({});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount - study UID is in URL
+    const updateLayers = () => {
+      const studiesLayersMap = getAllStudiesOverlayLayers(displaySetService);
+      const allLayersList: LayerDef[] = [];
+
+      // Flatten all layers from all studies into a single array
+      studiesLayersMap.forEach((studyLayers) => {
+        allLayersList.push(...studyLayers);
+      });
+
+      setAllLayers(allLayersList);
+    };
+
+    // Initial update
+    updateLayers();
+
+    // Subscribe to display set changes
+    const subscriptions = [
+      displaySetService.subscribe(
+        displaySetService.EVENTS.DISPLAY_SETS_ADDED,
+        updateLayers
+      ),
+      displaySetService.subscribe(
+        displaySetService.EVENTS.DISPLAY_SETS_CHANGED,
+        updateLayers
+      ),
+    ];
+
+    return () => {
+      subscriptions.forEach(sub => sub.unsubscribe());
+    };
+  }, [displaySetService]);
 
   // Detect base imageId for the active viewport
   useEffect(() => {
@@ -78,21 +90,28 @@ export default function OverlayPanel() {
   useEffect(() => {
     if (!activeViewportId || !baseImageId) return;
 
-    // Clean up previous overlays
-    overlay.removeAll(activeViewportId);
+    // Small delay to ensure viewport is fully ready
+    const timeoutId = setTimeout(async () => {
+      // First, ensure all layers are added (but may be hidden)
+      for (const layer of allLayers) {
+        if (layer.file) {
+          // Check if layer already exists
+          const layerExists = overlay.hasLayer?.(activeViewportId, layer.id);
+          if (!layerExists) {
+            console.log('[AI Overlays Panel] Adding layer:', layer.id, layer.file);
+            await overlay.addLayer(activeViewportId, layer, baseImageId);
+          }
 
-    // Add enabled layers
-    layers.forEach(layer => {
-      if (enabled[layer.id] && layer.file) {
-        overlay.addLayer(activeViewportId, layer, baseImageId);
+          // Show or hide based on enabled state
+          overlay.show(activeViewportId, layer.id, enabled[layer.id] || false);
+        }
       }
-    });
+    }, 100);
 
-    // Cleanup on viewport change
     return () => {
-      overlay.removeAll(activeViewportId);
+      clearTimeout(timeoutId);
     };
-  }, [activeViewportId, baseImageId, layers, enabled, overlay]);
+  }, [activeViewportId, baseImageId, allLayers, enabled, overlay]);
 
   // Handle toggle
   const handleToggle = (layerId: string) => {
@@ -109,22 +128,26 @@ export default function OverlayPanel() {
         <div className="text-sm text-white">No active viewport. Please select a viewport.</div>
       ) : (
         <div className="space-y-3">
-          {layers.map(layer => (
-            <div
-              key={layer.id}
-              className="bg-secondary-dark flex items-center justify-between rounded p-2"
-            >
-              <label className="flex cursor-pointer items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={enabled[layer.id] || false}
-                  onChange={() => handleToggle(layer.id)}
-                  className="h-4 w-4 cursor-pointer"
-                />
-                <span className="text-sm text-white">{layer.label}</span>
-              </label>
-            </div>
-          ))}
+          {allLayers.length === 0 ? (
+            <div className="text-sm text-white">No AI overlay layers available for current studies.</div>
+          ) : (
+            allLayers.map(layer => (
+              <div
+                key={layer.id}
+                className="bg-secondary-dark flex items-center justify-between rounded p-2"
+              >
+                <label className="flex cursor-pointer items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={enabled[layer.id] || false}
+                    onChange={() => handleToggle(layer.id)}
+                    className="h-4 w-4 cursor-pointer"
+                  />
+                  <span className="text-sm text-white">{layer.label}</span>
+                </label>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>

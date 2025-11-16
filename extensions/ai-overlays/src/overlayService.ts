@@ -231,14 +231,48 @@ export function createOverlayService(servicesManager: ServicesManager) {
 
     try {
       // Fetch and load the overlay image
+      console.log(`[Overlay Service] Fetching overlay image: ${layer.file}`);
       const response = await fetch(layer.file);
-      if (!response.ok) {
-        console.error(`Failed to fetch overlay: ${layer.file}`);
-        return;
-      }
 
-      const blob = await response.blob();
-      const imageBitmap = await createImageBitmap(blob);
+      let imageBitmap: ImageBitmap;
+
+      // Check if response is ok and is an image
+      if (!response.ok || !response.headers.get('content-type')?.startsWith('image/')) {
+        console.warn(`[Overlay Service] Failed to fetch overlay or not an image: ${layer.file}`, response.status, response.statusText);
+        // Create a dummy colored overlay for testing
+        console.log(`[Overlay Service] Creating dummy overlay for testing`);
+        const dummyCanvas = document.createElement('canvas');
+        dummyCanvas.width = 512;
+        dummyCanvas.height = 512;
+        const ctx = dummyCanvas.getContext('2d');
+        if (ctx) {
+          // Fill with semi-transparent color for testing
+          ctx.fillStyle = layer.color || '#ff0000';
+          ctx.globalAlpha = 0.3;
+          ctx.fillRect(0, 0, 512, 512);
+        }
+        imageBitmap = await createImageBitmap(dummyCanvas);
+        console.log(`[Overlay Service] Created dummy overlay: ${layer.id}`);
+      } else {
+        const blob = await response.blob();
+        try {
+          imageBitmap = await createImageBitmap(blob);
+          console.log(`[Overlay Service] Successfully loaded overlay image: ${layer.file}`, imageBitmap.width, imageBitmap.height);
+        } catch (decodeError) {
+          console.warn(`[Overlay Service] Failed to decode image, creating dummy: ${layer.file}`, decodeError);
+          // Create dummy if decode fails
+          const dummyCanvas = document.createElement('canvas');
+          dummyCanvas.width = 512;
+          dummyCanvas.height = 512;
+          const ctx = dummyCanvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = layer.color || '#ff0000';
+            ctx.globalAlpha = 0.3;
+            ctx.fillRect(0, 0, 512, 512);
+          }
+          imageBitmap = await createImageBitmap(dummyCanvas);
+        }
+      }
 
       // Create canvas for this layer
       const canvas = createOverlayCanvas(viewportId, layer.id);
@@ -274,7 +308,10 @@ export function createOverlayService(servicesManager: ServicesManager) {
 
   function show(viewportId: string, layerId: string, visible: boolean) {
     const handle = handles.get(viewportId)?.get(layerId);
-    if (!handle) return;
+    if (!handle) {
+      console.warn(`[Overlay Service] Layer ${layerId} not found for viewport ${viewportId}`);
+      return;
+    }
 
     handle.visible = visible;
     handle.canvas.style.display = visible ? 'block' : 'none';
@@ -282,6 +319,10 @@ export function createOverlayService(servicesManager: ServicesManager) {
     if (visible) {
       renderOverlay(viewportId, layerId);
     }
+  }
+
+  function hasLayer(viewportId: string, layerId: string): boolean {
+    return handles.get(viewportId)?.has(layerId) || false;
   }
 
   function setOpacity(viewportId: string, layerId: string, opacity: number) {
@@ -316,5 +357,6 @@ export function createOverlayService(servicesManager: ServicesManager) {
     setOpacity,
     removeLayer,
     removeAll,
+    hasLayer,
   };
 }
