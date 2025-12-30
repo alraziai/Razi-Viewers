@@ -231,6 +231,10 @@ import ChevronLeft from './Sources/ChevronLeft';
 import StatusAlert from './Sources/StatusAlert';
 import Undo from './Sources/Undo';
 import TabContours from './Sources/TabContours';
+import RAZILogo from './Sources/RAZILogo';
+import RAZILogoText from './Sources/RAZILogoText';
+import RAZIRadiologyText from './Sources/RAZIRadiologyText';
+import RaziArrowDown from './Sources/RaziArrowDown';
 //
 //
 type IconProps = React.HTMLAttributes<SVGElement>;
@@ -247,6 +251,10 @@ const ImageWrapper = ({ src, ...props }: { src: string } & ImageIconProps) => {
 };
 
 export const Icons = {
+  'RAZI-Logo': (props: IconProps) => <RAZILogo {...props} />,
+  'RAZI-Logo-Text': (props: IconProps) => <RAZILogoText {...props} />,
+  'RAZI-Radiology-Text': (props: IconProps) => <RAZIRadiologyText {...props} />,
+  'RAZI-Arrow-Down': (props: IconProps) => <RaziArrowDown {...props} />,
   'CT-AAA': (props: ImageIconProps) => (
     <ImageWrapper
       src={CTAAA}
@@ -505,6 +513,10 @@ export const Icons = {
   MultiplePatients,
   NavigationPanelReveal,
   OHIFLogo,
+  RAZILogoText,
+  RAZILogo,
+  RAZIRadiologyText,
+  RaziArrowDown,
   Patient,
   Pin,
   PinFill,

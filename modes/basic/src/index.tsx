@@ -205,7 +205,7 @@ export function onModeExit({ servicesManager }: withAppTypes) {
 export const toolbarSections = {
   //TODO: Add back in the toolbar buttons
   [TOOLBAR_SECTIONS.primary]: [
-    // 'MeasurementTools',
+    'MeasurementTools',
     'Zoom',
     'Pan',
     // 'TrackballRotate',

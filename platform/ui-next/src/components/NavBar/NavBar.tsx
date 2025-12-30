@@ -17,11 +17,14 @@ const NavBar = ({
   return (
     <div
       className={classnames(
-        'bg-secondary-dark z-20 border-black px-1',
+        'z-20 border-black px-1',
         isSticky && stickyClasses,
         !isSticky && notStickyClasses,
         className
       )}
+      style={{
+        background: 'linear-gradient(90deg, #48FFF626, #2E86D5, #48FFF626',
+      }}
     >
       {children}
     </div>

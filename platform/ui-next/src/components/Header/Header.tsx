@@ -60,8 +60,8 @@ function Header({
         isSticky={isSticky}
         {...props}
       >
-        <div className="relative h-[48px] items-center">
-          <div className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center">
+        <div className="relative h-[100px] items-center">
+          <div className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center px-4">
             <div
               className={classNames(
                 'mr-3 inline-flex items-center',
@@ -72,7 +72,16 @@ function Header({
             >
               {isReturnEnabled && <Icons.ArrowLeft className="text-primary ml-1 h-7 w-7" />}
               <div className="ml-1">
-                {WhiteLabeling?.createLogoComponentFn?.(React, props) || <Icons.OHIFLogo />}
+                {WhiteLabeling?.createLogoComponentFn?.(React, props) || (
+                  <div className="flex flex-col items-start gap-2">
+                    <div className="flex flex-row items-center gap-4">
+                      <Icons.RAZILogo />
+                      <Icons.RAZILogoText />
+                    </div>
+                    <Icons.RAZIRadiologyText />
+                  </div>
+                )}
+                {/* {WhiteLabeling?.createLogoComponentFn?.(React, props) || <Icons.RAZILogoText />} */}
               </div>
             </div>
           </div>
@@ -90,10 +99,25 @@ function Header({
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="text-primary hover:bg-primary-dark mt-2 h-full w-full"
+                    // size="icon"
+                    className="text-primary mt-2 h-full w-full gap-4 rounded-2xl border-2 border-[#FFFFFF1A] bg-[#FFFFFF0D] p-4"
                   >
-                    <Icons.GearSettings />
+                    <div
+                      className="flex h-[32px] w-[32px] items-center justify-center rounded-full font-medium font-[12px] text-white"
+                      style={{
+                        background: 'linear-gradient(180deg, #2E86D5, #48FFF6',
+                      }}
+                    >
+                      DR
+                    </div>
+                    <div className="flex flex-col items-start gap-1 text-white">
+                      <div className="font-medium font-[12px]">Dr. Sarah Chen</div>
+                      <div className="font-regular font-[10px] text-[#FFFFFF80]">Radiolgist</div>
+                    </div>
+                    <div className="flex w-5 items-center justify-center">
+                      <Icons.RaziArrowDown />
+                    </div>
+                    {/* <Icons.GearSettings /> */}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
