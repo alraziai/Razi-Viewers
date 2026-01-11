@@ -34,6 +34,7 @@ import {
   Onboarding,
   ScrollArea,
   InvestigationalUseDialog,
+  SideNavBar,
 } from '@ohif/ui-next';
 
 import { Types } from '@ohif/ui';
@@ -561,7 +562,9 @@ function WorkList({
       />
       <Onboarding />
       <InvestigationalUseDialog dialogConfiguration={appConfig?.investigationalUseDialog} />
-      <div className="flex h-full flex-col overflow-y-auto">
+      <div className="flex h-full flex-row overflow-hidden">
+        <SideNavBar />
+        <div className="flex h-full flex-1 flex-col overflow-y-auto">
         <ScrollArea>
           <div className="flex grow flex-col">
             <StudyListFilter
@@ -606,6 +609,7 @@ function WorkList({
             </div>
           )}
         </ScrollArea>
+        </div>
       </div>
     </div>
   );

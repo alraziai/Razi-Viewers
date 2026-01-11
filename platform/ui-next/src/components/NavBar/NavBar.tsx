@@ -23,7 +23,9 @@ const NavBar = ({
         className
       )}
       style={{
-        background: 'linear-gradient(90deg, #48FFF626, #2E86D5, #48FFF626',
+        background: 'linear-gradient(90deg, #102C40, #133948, #102C40',
+        // background: 'linear-gradient(90deg, #0A1628, #48FFF6, #0A1628',
+        // background: 'linear-gradient(90deg, #0A1628, #0D1B35, #0A1628'
       }}
     >
       {children}
