@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from '@ohif/ui-next';
 
 // Route Components
@@ -112,7 +112,7 @@ const createRoutes = ({
   console.log('Registering worklist route', routerBasename, path);
 
   const WorkListRoute = {
-    path: '/',
+    path: '/worklist',
     children: DataSourceWrapper,
     private: true,
     props: { children: WorkList, servicesManager, extensionManager },
@@ -167,6 +167,11 @@ const createRoutes = ({
   // Todo: I think we can remove the second public return below
   return (
     <Routes>
+      {/* Redirect root path to dashboard */}
+      <Route
+        path="/"
+        element={<Navigate to="/dashboard" replace />}
+      />
       {allRoutes.map((route, i) => {
         return route.private === true ? (
           <Route

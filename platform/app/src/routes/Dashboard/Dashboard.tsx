@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import isEqual from 'lodash.isequal';
 import {
   Header,
   Icons,
@@ -12,11 +14,30 @@ import {
 } from '@ohif/ui-next';
 import { useAppConfig } from '@state';
 import { Types } from '@ohif/ui';
+import { utils } from '@ohif/core';
+import { preserveQueryParameters } from '../../utils/preserveQueryParameters';
+import filtersMeta from '../WorkList/filtersMeta';
 import KPICard from './KPICard';
 import DashboardTable from './DashboardTable';
 import PerformanceCard from './PerformanceCard';
+import DashboardFilterBar from './DashboardFilterBar';
 
 const PatientInfoVisibility = Types.PatientInfoVisibility;
+const { sortBySeriesDate } = utils;
+
+const defaultFilterValues = {
+  patientName: '',
+  mrn: '',
+  studyDate: {
+    startDate: null,
+    endDate: null,
+  },
+  description: '',
+  modalities: [],
+  accession: '',
+  sortBy: '',
+  sortDirection: 'none',
+};
 
 // Line Graph Icon for KPIs
 const LineGraphIcon = () => (
@@ -140,14 +161,176 @@ function Dashboard({
   isLoadingData,
   dataSource,
   servicesManager,
+  dataPath,
 }: withAppTypes) {
   const { t } = useTranslation();
   const [appConfig] = useAppConfig();
   const { customizationService } = servicesManager.services;
 
+  // Track expanded rows
+  const [expandedRows, setExpandedRows] = useState<number[]>([]);
+  const [studiesWithSeriesData, setStudiesWithSeriesData] = useState<string[]>([]);
+  const seriesInStudiesMap = new Map();
+
+  // Filter state
+  const [filterValues, setFilterValues] = useState(defaultFilterValues);
+  const [showFilterBar, setShowFilterBar] = useState(false);
+
+  const isFiltering = useMemo(() => {
+    return !isEqual(filterValues, defaultFilterValues);
+  }, [filterValues]);
+
+  const { sortBy, sortDirection } = filterValues;
+  const filterSorting = { sortBy, sortDirection };
+  const setFilterSorting = (sortingValues: any) => {
+    setFilterValues({
+      ...filterValues,
+      ...sortingValues,
+    });
+  };
+  const isSortingEnabled = studiesTotal > 0 && studiesTotal <= 100;
+
+  // Reset expanded rows when filters change
+  useEffect(() => {
+    setExpandedRows([]);
+  }, [filterValues]);
+
+  // Filter studies based on filter values
+  const filteredStudies = useMemo(() => {
+    return studies.filter(study => {
+      // Patient Name filter
+      if (filterValues.patientName) {
+        const patientName = (study.patientName || '').toLowerCase();
+        if (!patientName.includes(filterValues.patientName.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // MRN filter
+      if (filterValues.mrn) {
+        const mrn = (study.mrn || '').toLowerCase();
+        if (!mrn.includes(filterValues.mrn.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Description filter
+      if (filterValues.description) {
+        const description = (study.description || '').toLowerCase();
+        if (!description.includes(filterValues.description.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Accession filter
+      if (filterValues.accession) {
+        const accession = (study.accession || '').toLowerCase();
+        if (!accession.includes(filterValues.accession.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Modalities filter
+      if (filterValues.modalities && filterValues.modalities.length > 0) {
+        const studyModalities = (study.modalities || '').toUpperCase();
+        const hasMatchingModality = filterValues.modalities.some((mod: string) => {
+          const modUpper = mod.toUpperCase();
+          // Check if the modality string contains the filter value
+          // This handles cases like "DX" matching "DX/RF"
+          return studyModalities.includes(modUpper);
+        });
+        if (!hasMatchingModality) {
+          return false;
+        }
+      }
+
+      // Date range filter
+      if (filterValues.studyDate?.startDate || filterValues.studyDate?.endDate) {
+        const studyDate = study.date;
+        if (studyDate) {
+          const dateFormat = studyDate.length === 8 ? 'YYYYMMDD' : 'YYYY.MM.DD';
+          const studyMoment = moment(studyDate, dateFormat, true);
+
+          if (filterValues.studyDate.startDate) {
+            const startMoment = moment(filterValues.studyDate.startDate);
+            if (studyMoment.isBefore(startMoment, 'day')) {
+              return false;
+            }
+          }
+
+          if (filterValues.studyDate.endDate) {
+            const endMoment = moment(filterValues.studyDate.endDate);
+            if (studyMoment.isAfter(endMoment, 'day')) {
+              return false;
+            }
+          }
+        }
+      }
+
+      return true;
+    });
+  }, [studies, filterValues]);
+
+  // Sort filtered studies
+  const sortedFilteredStudies = useMemo(() => {
+    if (!isSortingEnabled || !sortBy) {
+      return filteredStudies;
+    }
+
+    return [...filteredStudies].sort((s1, s2) => {
+      const s1Prop = s1[sortBy];
+      const s2Prop = s2[sortBy];
+      const sortModifier = sortDirection === 'descending' ? 1 : -1;
+
+      if (typeof s1Prop === 'string' && typeof s2Prop === 'string') {
+        return s1Prop.localeCompare(s2Prop) * sortModifier;
+      } else if (typeof s1Prop === 'number' && typeof s2Prop === 'number') {
+        return (s1Prop > s2Prop ? 1 : -1) * sortModifier;
+      } else if (!s1Prop && s2Prop) {
+        return -1 * sortModifier;
+      } else if (!s2Prop && s1Prop) {
+        return 1 * sortModifier;
+      } else if (sortBy === 'studyDate') {
+        const s1Date = moment(s1.date, ['YYYYMMDD', 'YYYY.MM.DD'], true);
+        const s2Date = moment(s2.date, ['YYYYMMDD', 'YYYY.MM.DD'], true);
+        if (s1Date.isValid() && s2Date.isValid()) {
+          return (s1Date.toISOString() > s2Date.toISOString() ? 1 : -1) * sortModifier;
+        }
+      }
+
+      return 0;
+    });
+  }, [filteredStudies, sortBy, sortDirection, isSortingEnabled]);
+
+  // Query for series information when rows are expanded
+  useEffect(() => {
+    const fetchSeries = async (studyInstanceUid: string) => {
+      try {
+        const series = await dataSource.query.series.search(studyInstanceUid);
+        seriesInStudiesMap.set(studyInstanceUid, sortBySeriesDate(series));
+        setStudiesWithSeriesData(prev => [...prev, studyInstanceUid]);
+      } catch (ex) {
+        console.warn(ex);
+      }
+    };
+
+    expandedRows.forEach((rowIndex) => {
+      // Use sortedFilteredStudies to get the correct study after filtering
+      if (rowIndex >= 0 && rowIndex < sortedFilteredStudies.length) {
+        const study = sortedFilteredStudies[rowIndex];
+        if (study && study.studyInstanceUid) {
+          if (!studiesWithSeriesData.includes(study.studyInstanceUid)) {
+            fetchSeries(study.studyInstanceUid);
+          }
+        }
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedRows, sortedFilteredStudies, dataSource]);
+
   // Transform study data to dashboard table format
   const dashboardTableData = useMemo(() => {
-    return studies.slice(0, 10).map((study, index) => {
+    return sortedFilteredStudies.slice(0, 10).map((study, index) => {
       const {
         studyInstanceUid,
         accession,
@@ -213,9 +396,13 @@ function Dashboard({
         findings,
         time: getRelativeTime(date || '', time || ''),
         isUrgent: index === 1,
+        studyInstanceUid,
+        study,
+        modalities,
+        isExpanded: expandedRows.includes(index),
       };
     });
-  }, [studies]);
+  }, [sortedFilteredStudies, expandedRows]);
 
   // Calculate KPIs from study data
   const activePatients = useMemo(() => {
@@ -338,7 +525,33 @@ function Dashboard({
 
                   {/* Recent Updated Scans Table */}
                   <div>
-                    <DashboardTable data={dashboardTableData} />
+                    {showFilterBar && (
+                      <DashboardFilterBar
+                        filtersMeta={filtersMeta}
+                        filterValues={filterValues}
+                        onChange={setFilterValues}
+                        clearFilters={() => setFilterValues(defaultFilterValues)}
+                        isFiltering={isFiltering}
+                        numOfStudies={sortedFilteredStudies.length}
+                        filterSorting={filterSorting}
+                        onSortingChange={setFilterSorting}
+                        isSortingEnabled={isSortingEnabled}
+                      />
+                    )}
+                    <DashboardTable
+                      data={dashboardTableData}
+                      expandedRows={expandedRows}
+                      onToggleRow={(index: number) => {
+                        setExpandedRows(prev =>
+                          prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+                        );
+                      }}
+                      seriesInStudiesMap={seriesInStudiesMap}
+                      appConfig={appConfig}
+                      dataPath={dataPath}
+                      t={t}
+                      onFilterClick={() => setShowFilterBar(!showFilterBar)}
+                    />
                   </div>
 
                   {/* Real-time AI Analysis & System Performance */}

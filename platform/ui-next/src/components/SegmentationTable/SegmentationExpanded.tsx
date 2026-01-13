@@ -19,13 +19,13 @@ const SegmentationExpandedHeader = ({ children }: { children: React.ReactNode })
 
   return (
     <PanelSection.Header
-      className={`bg-muted my-0 rounded-none border-l-[2px] pl-0 ${isActive ? 'border-primary/70' : 'border-primary/35'}`}
+      className={`bg-[#083A4A] border border-[#FFFFFF1A] my-0 rounded-none border-l-[2px] pl-0 hover:bg-[#0A4A5A] transition-colors ${isActive ? 'border-[#48FFF6] bg-[#083A4A]' : 'border-[#48FFF6]/35'}`}
       onClick={e => {
         e.stopPropagation();
         onSegmentationClick(segmentation.segmentationId);
       }}
     >
-      <div className="text-foreground flex h-8 w-full items-center">{children}</div>
+      <div className="text-white flex h-8 w-full items-center">{children}</div>
     </PanelSection.Header>
   );
 };
@@ -84,7 +84,7 @@ const SegmentationExpandedContent = ({ children }: { children: React.ReactNode }
   const { isActive } = useSegmentationExpanded('SegmentationExpandedContent');
   return (
     <PanelSection.Content
-      className={`border-l-[2px] py-0 pb-6 pl-[8px] ${isActive ? 'border-primary/70' : 'border-primary/35'}`}
+      className={`bg-[#0A1628] border-l-[2px] py-0 pb-6 pl-[8px] ${isActive ? 'border-[#48FFF6]' : 'border-[#48FFF6]/35'}`}
     >
       <div className="segmentation-expanded-section">{children}</div>
     </PanelSection.Content>
@@ -105,7 +105,7 @@ const SegmentationExpandedRoot = ({ children }) => {
 
   return (
     <ScrollArea
-      className={`bg-bkg-low space-y-px`}
+      className={`bg-[#0A1628] space-y-px`}
       showArrows={true}
     >
       <div

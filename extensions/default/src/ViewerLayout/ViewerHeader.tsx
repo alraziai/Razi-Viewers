@@ -31,7 +31,7 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
     preserveQueryParameters(searchQuery);
 
     navigate({
-      pathname: '/',
+      pathname: '/dashboard',
       search: decodeURIComponent(searchQuery.toString()),
     });
   };

@@ -1,7 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { Link } from 'react-router-dom';
 import { Icons } from '@ohif/ui-next';
 import classNames from 'classnames';
+import { preserveQueryParameters } from '../../utils/preserveQueryParameters';
+import DashboardExpandedRow from './DashboardExpandedRow';
 
 interface DashboardTableRow {
   patientInitials: string;
@@ -14,13 +17,33 @@ interface DashboardTableRow {
   findings: string;
   time: string;
   isUrgent?: boolean;
+  studyInstanceUid?: string;
+  study?: any;
+  modalities?: string;
+  isExpanded?: boolean;
 }
 
 interface DashboardTableProps {
   data: DashboardTableRow[];
+  expandedRows: number[];
+  onToggleRow: (index: number) => void;
+  seriesInStudiesMap: Map<string, any[]>;
+  appConfig: any;
+  dataPath?: string;
+  t: (key: string, defaultValue?: string) => string;
+  onFilterClick?: () => void;
 }
 
-const DashboardTable: React.FC<DashboardTableProps> = ({ data }) => {
+const DashboardTable: React.FC<DashboardTableProps> = ({
+  data,
+  expandedRows,
+  onToggleRow,
+  seriesInStudiesMap,
+  appConfig,
+  dataPath,
+  t,
+  onFilterClick,
+}) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
@@ -63,7 +86,10 @@ const DashboardTable: React.FC<DashboardTableProps> = ({ data }) => {
             <p className="text-sm text-[#B0B0B0] mt-1">Real-time analysis and results</p>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 rounded-lg border border-[#FFFFFF1A] bg-[#FFFFFF0D] px-4 py-2 text-sm text-white hover:bg-[#FFFFFF1A] transition-colors">
+            <button
+              onClick={onFilterClick}
+              className="flex items-center gap-2 rounded-lg border border-[#FFFFFF1A] bg-[#FFFFFF0D] px-4 py-2 text-sm text-white hover:bg-[#FFFFFF1A] transition-colors"
+            >
               <Icons.Sorting className="h-4 w-4" />
               Filter
             </button>
@@ -108,14 +134,21 @@ const DashboardTable: React.FC<DashboardTableProps> = ({ data }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#FFFFFF1A]">
-            {data.map((row, index) => (
-              <tr
-                key={index}
-                className={classNames(
-                  'hover:bg-[#083A4A] transition-colors',
-                  row.isUrgent && 'bg-blue-500/10'
-                )}
-              >
+            {data.map((row, index) => {
+              const isExpanded = expandedRows.includes(index);
+              const studyInstanceUid = row.studyInstanceUid;
+              const study = row.study;
+              const modalities = row.modalities || '';
+
+              return (
+                <React.Fragment key={index}>
+                  <tr
+                    className={classNames(
+                      'hover:bg-[#083A4A] transition-colors',
+                      row.isUrgent && 'bg-blue-500/10',
+                      isExpanded && 'bg-[#083A4A]'
+                    )}
+                  >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <input type="checkbox" className="rounded border-[#FFFFFF1A] bg-[#0A1628] text-[#48FFF6]" />
                 </td>
@@ -160,14 +193,122 @@ const DashboardTable: React.FC<DashboardTableProps> = ({ data }) => {
                     <button className="text-[#B0B0B0] hover:text-[#48FFF6] transition-colors">
                       <Icons.Export className="h-4 w-4" />
                     </button>
-                    <button className="ml-2 flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#2E86D5] to-[#48FFF6] px-3 py-1 text-xs font-medium text-[#0A1628] hover:opacity-90 transition-opacity">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleRow(index);
+                      }}
+                      className="ml-2 flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#2E86D5] to-[#48FFF6] px-3 py-1 text-xs font-medium text-[#0A1628] hover:opacity-90 transition-opacity"
+                    >
                       Review Case
                       <Icons.ChevronRight className="h-3 w-3" />
                     </button>
                   </div>
                 </td>
               </tr>
-            ))}
+              {isExpanded && studyInstanceUid && (
+                <tr className="bg-[#0A1628]">
+                  <td colSpan={10} className="p-0">
+                    <DashboardExpandedRow
+                      seriesTableColumns={{
+                        description: t('StudyList:Description', 'Description'),
+                        seriesNumber: t('StudyList:Series', 'Series'),
+                        modality: t('StudyList:Modality', 'Modality'),
+                        instances: t('StudyList:Instances', 'Instances'),
+                      }}
+                      seriesTableDataSource={
+                        seriesInStudiesMap.has(studyInstanceUid)
+                          ? seriesInStudiesMap.get(studyInstanceUid).map(s => ({
+                              description: s.description || '(empty)',
+                              seriesNumber: s.seriesNumber ?? '',
+                              modality: s.modality || '',
+                              instances: s.numSeriesInstances || '',
+                            }))
+                          : []
+                      }
+                    >
+                      <div className="flex flex-row gap-2">
+                        {(appConfig.groupEnabledModesFirst
+                          ? appConfig.loadedModes.sort((a, b) => {
+                              const isValidA = a.isValidMode({
+                                modalities: modalities.replaceAll('/', '\\'),
+                                study,
+                              }).valid;
+                              const isValidB = b.isValidMode({
+                                modalities: modalities.replaceAll('/', '\\'),
+                                study,
+                              }).valid;
+                              return isValidB - isValidA;
+                            })
+                          : appConfig.loadedModes
+                        ).map((mode, i) => {
+                          if (mode.hide) {
+                            return null;
+                          }
+                          const modalitiesToCheck = modalities.replaceAll('/', '\\');
+                          const { valid: isValidMode, description: invalidModeDescription } = mode.isValidMode({
+                            modalities: modalitiesToCheck,
+                            study,
+                          });
+                          if (isValidMode === null) {
+                            return null;
+                          }
+
+                          // Only show "Basic Viewer" mode (routeName === 'viewer')
+                          // Comment out other modes
+                          if (mode.routeName !== 'viewer') {
+                            return null;
+                          }
+
+                          const query = new URLSearchParams();
+                          query.append('StudyInstanceUIDs', studyInstanceUid);
+                          preserveQueryParameters(query);
+
+                          // Use absolute path to avoid /dashboard prefix
+                          // mode.routeName is 'viewer', so we need /viewer
+                          const routePath = `/${mode.routeName}`;
+
+                          return (
+                            mode.displayName && (
+                              <Link
+                                className={isValidMode ? '' : 'cursor-not-allowed'}
+                                key={i}
+                                to={`${routePath}?${query.toString()}`}
+                                onClick={event => {
+                                  if (!isValidMode) {
+                                    event.preventDefault();
+                                  }
+                                }}
+                              >
+                                <button
+                                  disabled={!isValidMode}
+                                  className={classNames(
+                                    'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-opacity',
+                                    isValidMode
+                                      ? 'bg-gradient-to-r from-[#2E86D5] to-[#48FFF6] text-[#0A1628] hover:opacity-90'
+                                      : 'bg-[#222d44] text-[#B0B0B0] cursor-not-allowed'
+                                  )}
+                                  data-cy={`mode-${mode.routeName}-${studyInstanceUid}`}
+                                >
+                                  {isValidMode ? (
+                                    <Icons.LaunchArrow className="h-4 w-4" />
+                                  ) : (
+                                    <Icons.LaunchInfo className="h-4 w-4" />
+                                  )}
+                                  {mode.displayName}
+                                </button>
+                              </Link>
+                            )
+                          );
+                        })}
+                      </div>
+                    </DashboardExpandedRow>
+                  </td>
+                </tr>
+              )}
+            </React.Fragment>
+            );
+            })}
           </tbody>
         </table>
       </div>
@@ -188,8 +329,19 @@ DashboardTable.propTypes = {
       findings: PropTypes.string.isRequired,
       time: PropTypes.string.isRequired,
       isUrgent: PropTypes.bool,
+      studyInstanceUid: PropTypes.string,
+      study: PropTypes.object,
+      modalities: PropTypes.string,
+      isExpanded: PropTypes.bool,
     })
   ).isRequired,
+  expandedRows: PropTypes.arrayOf(PropTypes.number).isRequired,
+  onToggleRow: PropTypes.func.isRequired,
+  seriesInStudiesMap: PropTypes.instanceOf(Map).isRequired,
+  appConfig: PropTypes.object.isRequired,
+  dataPath: PropTypes.string,
+  t: PropTypes.func.isRequired,
+  onFilterClick: PropTypes.func,
 };
 
 export default DashboardTable;
