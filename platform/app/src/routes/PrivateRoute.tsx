@@ -1,10 +1,23 @@
 import { useUserAuthentication } from '@ohif/ui-next';
+import { Navigate } from 'react-router-dom';
 
 export const PrivateRoute = ({ children, handleUnauthenticated }) => {
-  const [{ user, enabled }] = useUserAuthentication();
+  const [authState] = useUserAuthentication();
+  const user = authState?.user;
+  const enabled = authState?.enabled;
 
   if (enabled && !user) {
-    return handleUnauthenticated();
+    // If handleUnauthenticated is provided, use it (for OIDC)
+    if (handleUnauthenticated) {
+      return handleUnauthenticated();
+    }
+    // Otherwise, redirect to login
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
   }
 
   return children;

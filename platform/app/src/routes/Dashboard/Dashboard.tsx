@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import isEqual from 'lodash.isequal';
 import {
   Header,
@@ -11,6 +11,7 @@ import {
   ScrollArea,
   useModal,
   InputFilter,
+  useUserAuthentication,
 } from '@ohif/ui-next';
 import { useAppConfig } from '@state';
 import { Types } from '@ohif/ui';
@@ -41,7 +42,13 @@ const defaultFilterValues = {
 
 // Line Graph Icon for KPIs
 const LineGraphIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
     <path
       d="M3 12L9 6L13 10L21 2M21 2H15M21 2V8"
       stroke="currentColor"
@@ -60,7 +67,13 @@ const LineGraphIcon = () => (
 
 // People Icon
 const PeopleIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
     <path
       d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"
       stroke="currentColor"
@@ -94,24 +107,71 @@ const PeopleIcon = () => (
 
 // Target Icon
 const TargetIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-    <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="2" />
-    <circle cx="12" cy="12" r="2" stroke="currentColor" strokeWidth="2" />
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
+    <circle
+      cx="12"
+      cy="12"
+      r="6"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
+    <circle
+      cx="12"
+      cy="12"
+      r="2"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
   </svg>
 );
 
 // Clock Icon
 const ClockIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-    <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
+    <path
+      d="M12 6V12L16 14"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
   </svg>
 );
 
 // Brain Icon for AI Analysis
 const BrainIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
     <path
       d="M12 2C8 2 6 4 6 8C6 10 7 11.5 8 12C7 12.5 6 14 6 16C6 20 8 22 12 22C16 22 18 20 18 16C18 14 17 12.5 16 12C17 11.5 18 10 18 8C18 4 16 2 12 2Z"
       stroke="currentColor"
@@ -137,7 +197,13 @@ const BrainIcon = () => (
 
 // Line Graph Icon for System Performance
 const SystemPerformanceIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
     <path
       d="M3 3V21H21"
       stroke="currentColor"
@@ -164,8 +230,11 @@ function Dashboard({
   dataPath,
 }: withAppTypes) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [appConfig] = useAppConfig();
-  const { customizationService } = servicesManager.services;
+  const { customizationService, userAuthenticationService } = servicesManager.services;
+  const [authState] = useUserAuthentication();
+  const user = authState?.user;
 
   // Track expanded rows
   const [expandedRows, setExpandedRows] = useState<number[]>([]);
@@ -314,7 +383,7 @@ function Dashboard({
       }
     };
 
-    expandedRows.forEach((rowIndex) => {
+    expandedRows.forEach(rowIndex => {
       // Use sortedFilteredStudies to get the correct study after filtering
       if (rowIndex >= 0 && rowIndex < sortedFilteredStudies.length) {
         const study = sortedFilteredStudies[rowIndex];
@@ -331,15 +400,8 @@ function Dashboard({
   // Transform study data to dashboard table format
   const dashboardTableData = useMemo(() => {
     return sortedFilteredStudies.slice(0, 10).map((study, index) => {
-      const {
-        studyInstanceUid,
-        accession,
-        modalities,
-        description,
-        patientName,
-        date,
-        time,
-      } = study;
+      const { studyInstanceUid, accession, modalities, description, patientName, date, time } =
+        study;
 
       // Get patient initials
       const getInitials = (name: string) => {
@@ -355,7 +417,8 @@ function Dashboard({
       const formatStudyType = (modality: string) => {
         if (modality.includes('CT')) return 'CT Scan';
         if (modality.includes('MR')) return 'MRI';
-        if (modality.includes('CR') || modality.includes('DR') || modality.includes('DX')) return 'X-Ray';
+        if (modality.includes('CR') || modality.includes('DR') || modality.includes('DX'))
+          return 'X-Ray';
         return modality || 'Unknown';
       };
 
@@ -364,8 +427,12 @@ function Dashboard({
         if (!dateStr) return 'Unknown';
         try {
           const dateFormat = dateStr.length === 8 ? 'YYYYMMDD' : 'YYYY.MM.DD';
-          const timeFormat = timeStr?.length === 6 ? 'HHmmss' : timeStr?.length === 4 ? 'HHmm' : 'HH';
-          const studyDateTime = moment(`${dateStr}${timeStr || ''}`, `${dateFormat}${timeStr ? timeFormat : ''}`);
+          const timeFormat =
+            timeStr?.length === 6 ? 'HHmmss' : timeStr?.length === 4 ? 'HHmm' : 'HH';
+          const studyDateTime = moment(
+            `${dateStr}${timeStr || ''}`,
+            `${dateFormat}${timeStr ? timeFormat : ''}`
+          );
           if (studyDateTime.isValid()) {
             return studyDateTime.fromNow();
           }
@@ -380,7 +447,8 @@ function Dashboard({
 
       // Mock findings
       const findingsOptions = ['Normal', 'Analyzing...', 'Abnormality detected'];
-      const findings = index === 1 ? 'Analyzing...' : index % 2 === 0 ? 'Normal' : 'Abnormality detected';
+      const findings =
+        index === 1 ? 'Analyzing...' : index % 2 === 0 ? 'Normal' : 'Abnormality detected';
 
       // Mock status
       const status = index === 1 ? 'processing' : 'completed';
@@ -415,6 +483,22 @@ function Dashboard({
     return 98.5;
   }, [studies]);
 
+  const handleLogout = () => {
+    // Clear localStorage
+    localStorage.removeItem('user');
+    localStorage.removeItem('isLoggedIn');
+
+    // Reset authentication service
+    userAuthenticationService.reset();
+    userAuthenticationService.set({ enabled: false });
+
+    // Log logout event
+    console.log('[AUTH] User logged out:', user?.email || 'unknown', new Date().toISOString());
+
+    // Redirect to login
+    navigate('/login', { replace: true });
+  };
+
   const menuOptions = [
     {
       title: 'About',
@@ -426,15 +510,12 @@ function Dashboard({
       icon: 'settings',
       onClick: () => {},
     },
-  ];
-
-  if (appConfig.oidc) {
-    menuOptions.push({
+    {
       icon: 'power-off',
       title: 'Logout',
-      onClick: () => {},
-    });
-  }
+      onClick: handleLogout,
+    },
+  ];
 
   // AI Analysis metrics (mock data)
   const aiAnalysisMetrics = [
@@ -469,11 +550,11 @@ function Dashboard({
               <InputFilter.SearchIcon />
               <InputFilter.Input
                 placeholder="Search patients, scans, reports..."
-                className="pl-9 pr-9 bg-[#0A1628] border border-[#FFFFFF1A] text-white placeholder:text-[#B0B0B0]"
+                className="border border-[#FFFFFF1A] bg-[#0A1628] pl-9 pr-9 text-white placeholder:text-[#B0B0B0]"
               />
               <InputFilter.ClearButton />
             </InputFilter>
-            <button className="text-[#B0B0B0] hover:text-[#48FFF6] transition-colors">
+            <button className="text-[#B0B0B0] transition-colors hover:text-[#48FFF6]">
               <Icons.NotificationInfo className="h-6 w-6" />
             </button>
           </div>
@@ -488,10 +569,10 @@ function Dashboard({
                 <div className="flex grow flex-col gap-6 p-6">
                   {/* Welcome and KPIs Section */}
                   <div>
-                    <h1 className="text-3xl font-semibold text-white mb-6">
+                    <h1 className="mb-6 text-3xl font-semibold text-white">
                       Welcome back, Doctor name
                     </h1>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                       <KPICard
                         title="Active Patients"
                         value={activePatients}
@@ -555,7 +636,7 @@ function Dashboard({
                   </div>
 
                   {/* Real-time AI Analysis & System Performance */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     <PerformanceCard
                       title="Real-time AI Analysis"
                       icon={<BrainIcon />}
