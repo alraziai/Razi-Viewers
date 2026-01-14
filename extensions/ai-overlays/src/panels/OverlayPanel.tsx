@@ -77,14 +77,14 @@ export default function OverlayPanel() {
   }, [viewportGridService]);
 
   return (
-    <div className="bg-primary-dark h-full overflow-auto p-4">
+    <div className="h-full overflow-auto bg-black p-4">
       <div className="mb-4 text-lg font-semibold text-white">Summary</div>
       {!activeViewportId ? (
         <div className="text-sm text-white">No active viewport. Please select a viewport.</div>
       ) : (
         <div className="space-y-4">
           {/* Study Metrics Table */}
-          <div className="bg-secondary-dark rounded p-3">
+          <div className="rounded bg-[#083A4A] p-3">
             <div className="mb-2 text-sm font-semibold text-white">Study Metrics</div>
             <div className="space-y-2">
               {dummySummaryData.studyMetrics.map((item, idx) => (
@@ -92,9 +92,9 @@ export default function OverlayPanel() {
                   key={idx}
                   className="border-primary-dark flex justify-between border-b pb-1 text-sm"
                 >
-                  <span className="text-secondary-light">{item.metric}</span>
+                  <span className="text-white">{item.metric}</span>
                   <span className="text-white">
-                    {item.value} <span className="text-secondary-light">{item.unit}</span>
+                    {item.value} <span className="text-white">{item.unit}</span>
                   </span>
                 </div>
               ))}
@@ -102,7 +102,7 @@ export default function OverlayPanel() {
           </div>
 
           {/* Findings Table */}
-          <div className="bg-secondary-dark rounded p-3">
+          <div className="rounded bg-[#083A4A] p-3">
             <div className="mb-2 text-sm font-semibold text-white">Findings</div>
             <div className="space-y-2">
               {dummySummaryData.findings.map((item, idx) => (
@@ -112,10 +112,10 @@ export default function OverlayPanel() {
                 >
                   <div className="mb-1 flex justify-between">
                     <span className="font-medium text-white">{item.finding}</span>
-                    <span className="text-secondary-light">{item.confidence}</span>
+                    <span className="text-white">{item.confidence}</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-secondary-light">{item.location}</span>
+                    <span className="text-white">{item.location}</span>
                     <span className="text-white">{item.status}</span>
                   </div>
                 </div>
@@ -124,7 +124,7 @@ export default function OverlayPanel() {
           </div>
 
           {/* AI Analysis Table */}
-          <div className="bg-secondary-dark rounded p-3">
+          <div className="rounded bg-[#083A4A] p-3">
             <div className="mb-2 text-sm font-semibold text-white">AI Analysis</div>
             <div className="space-y-2">
               {dummySummaryData.aiAnalysis.map((item, idx) => (
@@ -134,12 +134,12 @@ export default function OverlayPanel() {
                 >
                   <div className="mb-1 flex justify-between">
                     <span className="font-medium text-white">{item.analysis}</span>
-                    <span className="text-secondary-light">{item.score}</span>
+                    <span className="text-white">{item.score}</span>
                   </div>
                   <div className="mb-1 flex justify-between text-xs">
-                    <span className="text-secondary-light">Score: {item.value}</span>
+                    <span className="text-white">Score: {item.value}</span>
                   </div>
-                  <div className="text-secondary-light text-xs">{item.recommendation}</div>
+                  <div className="text-white text-xs">{item.recommendation}</div>
                 </div>
               ))}
             </div>

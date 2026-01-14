@@ -62,7 +62,7 @@ const Thumbnail = ({
     return (
       <div
         className={classnames(
-          'flex h-full w-full flex-col items-center justify-center gap-[2px] p-[4px]',
+          'flex h-full w-full flex-col items-center justify-center gap-[2px] bg-black p-[4px]',
           isActive && 'bg-[#083A4A] rounded border border-[#48FFF6]/50'
         )}
       >

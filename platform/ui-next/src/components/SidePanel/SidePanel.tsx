@@ -58,7 +58,7 @@ const closeIconWidth = 30;
 const gridHorizontalPadding = 10;
 const tabSpacerWidth = 2;
 
-const baseClasses = 'bg-[#0A1628] border-[#FFFFFF1A] justify-start box-content flex flex-col';
+const baseClasses = 'bg-black border-[#FFFFFF1A] justify-start box-content flex flex-col';
 
 const openStateIconName = {
   left: 'SidePanelCloseLeft',
@@ -111,7 +111,7 @@ const getTabClassNames = (
   isActiveTab: boolean,
   isTabDisabled: boolean
 ) =>
-  classnames('h-[28px] mb-[2px] cursor-pointer text-white bg-[#0A1628]', {
+  classnames('h-[28px] mb-[2px] cursor-pointer text-white bg-black', {
     'hover:text-[#48FFF6]': !isActiveTab && !isTabDisabled,
     'text-[#48FFF6]': isActiveTab && !isTabDisabled,
     'rounded-l': tabIndex % numColumns === 0,
@@ -366,20 +366,20 @@ const SidePanel = ({
       <>
         {getCloseIcon()}
         <div className={classnames('flex grow justify-center')}>
-          <div className={classnames('bg-[#0A1628] text-[#48FFF6] flex flex-wrap')}>
+          <div className={classnames('bg-black text-[#48FFF6] flex flex-wrap')}>
             {tabs.map((tab, tabIndex) => {
               const { disabled } = tab;
               return (
                 <React.Fragment key={tabIndex}>
                   {tabIndex % numCols !== 0 && (
-                    <div
-                      className={classnames(
-                        'flex h-[28px] w-[2px] items-center bg-[#0A1628]',
-                        tabSpacerWidth
-                      )}
-                    >
-                      <div className="bg-[#0A1628] h-[20px] w-full"></div>
-                    </div>
+                      <div
+                        className={classnames(
+                          'flex h-[28px] w-[2px] items-center bg-black',
+                          tabSpacerWidth
+                        )}
+                      >
+                        <div className="bg-black h-[20px] w-full"></div>
+                      </div>
                   )}
                   <Tooltip key={tabIndex}>
                     <TooltipTrigger>
@@ -445,7 +445,7 @@ const SidePanel = ({
   const getOpenStateComponent = () => {
     return (
       <>
-        <div className="bg-[#0A1628] border-b border-[#FFFFFF1A] flex h-[40px] flex-shrink-0 select-none rounded-t p-2">
+        <div className="bg-black border-b border-[#FFFFFF1A] flex h-[40px] flex-shrink-0 select-none rounded-t p-2">
           {tabs.length === 1 ? getOneTabComponent() : getTabGridComponent()}
         </div>
         <Separator
