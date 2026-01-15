@@ -59,6 +59,7 @@ const gridHorizontalPadding = 10;
 const tabSpacerWidth = 2;
 
 const baseClasses = 'bg-black border-[#FFFFFF1A] justify-start box-content flex flex-col';
+// const baseClasses = 'bg-gradient-to-b from-[#2E86D5] to-[#48FFF6] border-[#FFFFFF1A] justify-start box-content flex flex-col';
 
 const openStateIconName = {
   left: 'SidePanelCloseLeft',

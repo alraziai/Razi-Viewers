@@ -12,6 +12,7 @@ import {
   useModal,
   InputFilter,
   useUserAuthentication,
+  Input,
 } from '@ohif/ui-next';
 import { useAppConfig } from '@state';
 import { Types } from '@ohif/ui';
@@ -39,6 +40,33 @@ const defaultFilterValues = {
   sortBy: '',
   sortDirection: 'none',
 };
+
+const ActiveIcon = () => (
+  <svg width="35" height="35" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4.28906 10.0077V7.14838C4.28906 6.39004 4.59031 5.66276 5.12654 5.12654C5.66276 4.59031 6.39004 4.28906 7.14838 4.28906H10.0077" stroke="url(#paint0_linear_883_14181)" stroke-width="2.85932" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M24.3042 4.28906H27.1635C27.9219 4.28906 28.6491 4.59031 29.1854 5.12654C29.7216 5.66276 30.0228 6.39004 30.0228 7.14838V10.0077" stroke="url(#paint1_linear_883_14181)" stroke-width="2.85932" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M30.0228 24.3047V27.164C30.0228 27.9223 29.7216 28.6496 29.1854 29.1858C28.6491 29.7221 27.9219 30.0233 27.1635 30.0233H24.3042" stroke="url(#paint2_linear_883_14181)" stroke-width="2.85932" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M10.0077 30.0233H7.14838C6.39004 30.0233 5.66276 29.7221 5.12654 29.1858C4.59031 28.6496 4.28906 27.9223 4.28906 27.164V24.3047" stroke="url(#paint3_linear_883_14181)" stroke-width="2.85932" stroke-linecap="round" stroke-linejoin="round" />
+    <defs>
+      <linearGradient id="paint0_linear_883_14181" x1="7.14838" y1="4.28906" x2="7.14838" y2="10.0077" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#2E86D5" />
+        <stop offset="1" stop-color="#48FFF6" />
+      </linearGradient>
+      <linearGradient id="paint1_linear_883_14181" x1="27.1635" y1="4.28906" x2="27.1635" y2="10.0077" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#2E86D5" />
+        <stop offset="1" stop-color="#48FFF6" />
+      </linearGradient>
+      <linearGradient id="paint2_linear_883_14181" x1="27.1635" y1="24.3047" x2="27.1635" y2="30.0233" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#2E86D5" />
+        <stop offset="1" stop-color="#48FFF6" />
+      </linearGradient>
+      <linearGradient id="paint3_linear_883_14181" x1="7.14838" y1="24.3047" x2="7.14838" y2="30.0233" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#2E86D5" />
+        <stop offset="1" stop-color="#48FFF6" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
 
 // Line Graph Icon for KPIs
 const LineGraphIcon = () => (
@@ -503,12 +531,12 @@ function Dashboard({
     {
       title: 'About',
       icon: 'info',
-      onClick: () => {},
+      onClick: () => { },
     },
     {
       title: 'Preferences',
       icon: 'settings',
-      onClick: () => {},
+      onClick: () => { },
     },
     {
       icon: 'power-off',
@@ -534,35 +562,43 @@ function Dashboard({
   ];
 
   return (
-    <div className="flex h-screen flex-col bg-black">
+    <div className="flex h-screen flex-col bg-[#2E86D51A]">
       <Header
         isSticky
         menuOptions={menuOptions}
         isReturnEnabled={false}
         WhiteLabeling={appConfig.whiteLabeling}
         showPatientInfo={PatientInfoVisibility.DISABLED}
-        Secondary={
-          <div className="flex items-center gap-4">
-            <InputFilter
-              placeholder="Search patients, scans, reports..."
-              className="w-[500px]"
-            >
-              <InputFilter.SearchIcon />
-              <InputFilter.Input
-                placeholder="Search patients, scans, reports..."
-                className="border border-[#FFFFFF1A] bg-[#0A1628] pl-9 pr-9 text-white placeholder:text-[#B0B0B0]"
-              />
-              <InputFilter.ClearButton />
-            </InputFilter>
-            <button className="text-[#B0B0B0] transition-colors hover:text-[#48FFF6]">
-              <Icons.NotificationInfo className="h-6 w-6" />
-            </button>
-          </div>
-        }
+      // children={
+      //   <div
+      //     className="rounded-full p-[2px]"
+      //     style={{
+      //       background: 'linear-gradient(180deg, #2E86D5, #48FFF6)',
+      //     }}
+      //   >
+      //     <div className="rounded-full">
+      //       <input
+      //         type="text"
+      //         placeholder="Search patients, scans, reports..."
+      //         className="w-full rounded-full px-4 py-3 text-[#2E3957] transition-colors placeholder:text-[#FFFFFF66] focus:outline-none font-bold text-lg"
+      //         required
+      //       />
+      //     </div>
+      //   </div>
+      // }
       />
       <div className="flex h-full flex-row overflow-hidden">
         <SideNavBar activeItem="overview" />
-        <div className="flex h-full flex-1 flex-col overflow-y-auto bg-black">
+        <div
+          className="relative flex h-full flex-1 flex-col overflow-y-auto"
+          style={{
+            background: 'linear-gradient(180deg, rgba(10, 22, 40, 0.02) 0%, rgba(72, 255, 246, 0.02) 46.63%, rgba(10, 22, 40, 0.02) 100%), linear-gradient(180deg, #0A1628 0%, #0D1B35 47.6%, #0A1628 100%)',
+          }}
+        >
+          {/* Background with dots pattern */}
+          <div className="absolute inset-0 overflow-hidden">
+            <Icons.BackgroundDots />
+          </div>
           <ScrollArea>
             <div className="relative h-full overflow-hidden">
               <div className="h-full w-full rounded-[inherit]">
@@ -576,29 +612,29 @@ function Dashboard({
                       <KPICard
                         title="Active Patients"
                         value={activePatients}
-                        icon={<LineGraphIcon />}
-                        trend="+12%"
+                        icon={<ActiveIcon />}
+                        trend="12%"
                         trendPositive={true}
                       />
                       <KPICard
                         title="Active Patients"
                         value={studiesTotal}
                         icon={<PeopleIcon />}
-                        trend="+5%"
+                        trend="5%"
                         trendPositive={true}
                       />
                       <KPICard
                         title="Avg Accuracy"
                         value={`${avgAccuracy}%`}
                         icon={<TargetIcon />}
-                        trend="+0.3%"
+                        trend="0.3%"
                         trendPositive={true}
                       />
                       <KPICard
                         title="Time Saved"
                         value="34h"
                         icon={<ClockIcon />}
-                        trend="+18%"
+                        trend="18%"
                         trendPositive={true}
                       />
                     </div>

@@ -8,22 +8,47 @@ interface KPICardProps {
   trend?: string;
   trendPositive?: boolean;
 }
-
+const LineGraphIcon = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M3 12L9 6L13 10L21 2M21 2H15M21 2V8"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M3 18H21"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </svg>
+);
 const KPICard: React.FC<KPICardProps> = ({ title, value, icon, trend, trendPositive = true }) => {
   return (
-    <div className="rounded-lg bg-[#0A1628] border border-[#FFFFFF1A] p-6">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-2">
-          <span className="text-sm text-[#B0B0B0]">{title}</span>
+    <div className="rounded-3xl bg-white bg-opacity-[5%] border border-[#FFFFFF1A] p-6">
+      <div className="flex justify-between">
+        <div className="flex flex-col gap-4">
+          <div className="text-[#2E86D5]">{icon}</div>
+          <span className="text-lg text-[#FFFFFF99]">{title}</span>
           <span className="text-3xl font-semibold text-white">{value}</span>
+        </div>
+        <div className='justify-start content-start h-full'>
           {trend && (
-            <div className={`flex items-center gap-1 text-sm ${trendPositive ? 'text-green-400' : 'text-red-400'}`}>
+            <div className={`flex items-center gap-0.5 text-lg font-normal ${trendPositive ? 'text-[#2E86D5]' : 'text-red-400'}`}>
+              <LineGraphIcon />
               <span>{trendPositive ? '+' : '-'}</span>
               <span>{trend}</span>
             </div>
           )}
         </div>
-        <div className="text-[#48FFF6]">{icon}</div>
       </div>
     </div>
   );

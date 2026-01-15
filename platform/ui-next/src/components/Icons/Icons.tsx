@@ -235,6 +235,7 @@ import RAZILogo from './Sources/RAZILogo';
 import RAZILogoText from './Sources/RAZILogoText';
 import RAZIRadiologyText from './Sources/RAZIRadiologyText';
 import RaziArrowDown from './Sources/RaziArrowDown';
+import BackgroundDots from './Sources/Background-dots';
 //
 //
 type IconProps = React.HTMLAttributes<SVGElement>;
@@ -418,6 +419,7 @@ export const Icons = {
     />
   ),
   // Icons
+  BackgroundDots,
   LayerBackground,
   LayerForeground,
   LayerSegmentation,

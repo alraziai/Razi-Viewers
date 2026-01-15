@@ -14,7 +14,7 @@ interface PerformanceCardProps {
 
 const PerformanceCard: React.FC<PerformanceCardProps> = ({ title, icon, metrics }) => {
   return (
-    <div className="rounded-lg bg-[#0A1628] border border-[#FFFFFF1A] p-6">
+    <div className="rounded-3xl bg-[#FFFFFF0D] border border-[#FFFFFF1A] p-6">
       <div className="flex items-center gap-2 mb-6">
         <div className="text-[#48FFF6]">{icon}</div>
         <h3 className="text-lg font-semibold text-white">{title}</h3>

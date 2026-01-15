@@ -27,11 +27,10 @@ const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
   isSortingEnabled,
 }) => {
   return (
-    <div className="sticky top-0 z-10 mb-4 rounded-lg bg-[#0A1628] border border-[#FFFFFF1A] overflow-hidden">
-      <div className="bg-[#0A1628] pt-4 pb-4 px-6">
+    <div className="sticky top-0 z-10 mb-4 overflow-hidden transition-all duration-100">
+      <div className="pt-4 pb-4 px-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-white">Filters</span>
             {isFiltering && (
               <button
                 onClick={clearFilters}
@@ -42,23 +41,15 @@ const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-[#B0B0B0]">
-              {numOfStudies > 100 ? '>100' : numOfStudies}
-            </span>
-            <span className="text-sm text-[#B0B0B0]">Studies</span>
-          </div>
         </div>
-        <div className="bg-[#083A4A] rounded-lg p-4">
-          <InputGroup
-            inputMeta={filtersMeta}
-            values={filterValues}
-            onValuesChange={onChange}
-            sorting={filterSorting}
-            onSortingChange={onSortingChange}
-            isSortingEnabled={isSortingEnabled}
-          />
-        </div>
+        <InputGroup
+          inputMeta={filtersMeta}
+          values={filterValues}
+          onValuesChange={onChange}
+          sorting={filterSorting}
+          onSortingChange={onSortingChange}
+          isSortingEnabled={isSortingEnabled}
+        />
         {numOfStudies > 100 && (
           <div className="mt-3 rounded-lg bg-gradient-to-r from-[#2E86D5] to-[#48FFF6] px-4 py-2 text-center text-sm text-[#0A1628]">
             Filter list to 100 studies or less to enable sorting

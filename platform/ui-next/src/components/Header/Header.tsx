@@ -10,6 +10,7 @@ import {
   ToolButton,
 } from '../';
 import { IconPresentationProvider } from '@ohif/ui-next';
+import { useUserAuthentication } from '../../contextProviders';
 
 import NavBar from '../NavBar';
 
@@ -45,6 +46,38 @@ function Header({
   Secondary,
   ...props
 }: HeaderProps): ReactNode {
+  const [authState] = useUserAuthentication();
+  const user = authState?.user;
+
+  // Get user initials
+  const getUserInitials = () => {
+    if (!user) return 'DR';
+
+    if (user.firstName && user.lastName) {
+      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    }
+
+    if (user.name) {
+      const parts = user.name.split(' ');
+      if (parts.length >= 2) {
+        return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      }
+      return user.name.substring(0, 2).toUpperCase();
+    }
+
+    if (user.email) {
+      return user.email.substring(0, 2).toUpperCase();
+    }
+
+    return 'DR';
+  };
+
+  // Get user display name
+  const getUserDisplayName = () => {
+    if (!user) return 'Dr. Sarah Chen';
+    return user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Doctor';
+  };
+
   const onClickReturn = () => {
     if (isReturnEnabled && onClickReturnButton) {
       onClickReturnButton();
@@ -103,16 +136,16 @@ function Header({
                     className="text-primary mt-2 h-full w-full gap-4 rounded-2xl border-2 border-[#FFFFFF1A] bg-[#FFFFFF0D] p-4"
                   >
                     <div
-                      className="flex h-[32px] w-[32px] items-center justify-center rounded-full font-medium font-[12px] text-white"
+                      className="flex h-[32px] w-[32px] items-center justify-center rounded-full text-[12px] font-medium text-white"
                       style={{
                         background: 'linear-gradient(180deg, #2E86D5, #48FFF6',
                       }}
                     >
-                      DR
+                      {getUserInitials()}
                     </div>
                     <div className="flex flex-col items-start gap-1 text-white">
-                      <div className="font-medium font-[12px]">Dr. Sarah Chen</div>
-                      <div className="font-regular font-[10px] text-[#FFFFFF80]">Radiolgist</div>
+                      <div className="text-[12px] font-medium">{getUserDisplayName()}</div>
+                      <div className="text-[10px] font-regular text-[#FFFFFF80]">Radiolgist</div>
                     </div>
                     <div className="flex w-5 items-center justify-center">
                       <Icons.RaziArrowDown />

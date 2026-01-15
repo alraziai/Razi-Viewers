@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUserAuthentication } from '@ohif/ui-next';
+import { Icons, useUserAuthentication } from '@ohif/ui-next';
 import PropTypes from 'prop-types';
 import { publicUrl } from '../../utils/publicUrl';
 
@@ -64,26 +64,20 @@ function Login({ servicesManager }) {
   return (
     <div className="flex h-screen w-screen items-center justify-center overflow-hidden bg-[#0A1628]">
       {/* Background with dots pattern */}
-      <div
-        className="absolute inset-0 bg-[#0A1628]"
-        style={{
-          backgroundImage: `radial-gradient(circle, rgba(72, 255, 246, 0.15) 1px, transparent 1px)`,
-          backgroundSize: '30px 30px',
-        }}
-      />
+      <div className="absolute inset-0 overflow-hidden bg-[#2E86D51A]">
+        <div className="h-full w-full">
+          <Icons.BackgroundDots />
+        </div>
+      </div>
 
       {/* Main container - centered with width = 1.2 * height */}
       <div
-        className="flex flex-row items-center justify-center overflow-hidden rounded-xl backdrop-blur-sm"
+        className="flex flex-row items-center justify-center overflow-hidden rounded-xl bg-[#2E86D51A] backdrop-blur-md"
         style={{
           height: '66vh',
           width: 'calc(66vh * 1.2)',
           maxWidth: '90vw',
           maxHeight: 'calc(90vw / 1.2)',
-          backgroundColor: 'rgba(10, 22, 40, 0.75)',
-          boxShadow:
-            '0 0 30px rgba(72, 255, 246, 0.3), 0 0 60px rgba(72, 255, 246, 0.15), inset 0 0 20px rgba(72, 255, 246, 0.1)',
-          border: '1px solid rgba(72, 255, 246, 0.4)',
         }}
       >
         {/* Login form container - 45% width */}
@@ -99,26 +93,14 @@ function Login({ servicesManager }) {
           >
             {/* Logo and Brand */}
             <div className="mb-8 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="text-white"
-                >
-                  <path
-                    d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9H21ZM19 21H5V3H13V9H19V21Z"
-                    fill="currentColor"
-                  />
-                </svg>
+              <div className="ml-1 flex flex-row items-center gap-4">
+                <Icons.RAZILogo />
+                <Icons.RAZILogoText />
               </div>
-              <span className="text-2xl font-bold text-white">AI RAZI</span>
             </div>
 
             {/* Login Title */}
-            <h1 className="mb-8 text-3xl font-bold text-white">Login</h1>
+            <h1 className="mb-8 text-2xl font-bold text-white text-center">Login</h1>
 
             {/* Error message */}
             {error && (
@@ -133,34 +115,48 @@ function Login({ servicesManager }) {
               className="space-y-6"
             >
               {/* Email/Username Input */}
-              <div>
-                <input
-                  type="text"
-                  placeholder="Username or email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full rounded-lg border border-gray-600 bg-[#1A1F2E] px-4 py-3 text-white transition-colors placeholder:text-gray-400 focus:border-[#48FFF6] focus:outline-none focus:ring-2 focus:ring-[#48FFF6]/20"
-                  required
-                />
+              <div
+                className="rounded-full p-[2.5px]"
+                style={{
+                  background: 'linear-gradient(90deg, #42E3EE, #3ABDE4, #2E85D5, #2559C9, #1E3AC0, #1A26BB, #1920BA)',
+                }}
+              >
+                <div className="rounded-full bg-[#0A1628]">
+                  <input
+                    type="text"
+                    placeholder="Username or email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full rounded-full bg-[#D9D9D980] px-4 py-3 text-[#2E3957] transition-colors placeholder:text-[#2E3957] focus:outline-none font-bold text-lg"
+                    required
+                  />
+                </div>
               </div>
 
               {/* Password Input */}
-              <div>
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-gray-600 bg-[#1A1F2E] px-4 py-3 text-white transition-colors placeholder:text-gray-400 focus:border-[#48FFF6] focus:outline-none focus:ring-2 focus:ring-[#48FFF6]/20"
-                  required
-                />
+              <div
+                className="rounded-full p-[2.5px]"
+                style={{
+                  background: 'linear-gradient(90deg, #42E3EE, #3ABDE4, #2E85D5, #2559C9, #1E3AC0, #1A26BB, #1920BA)',
+                }}
+              >
+                <div className="rounded-full bg-[#0A1628]">
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full rounded-full bg-[#D9D9D980] px-4 py-3 text-[#2E3957] transition-colors placeholder:text-[#2E3957] focus:outline-none font-bold text-lg"
+                    required
+                  />
+                </div>
               </div>
 
               {/* Forgot Password Link */}
               <div className="flex justify-end">
                 <button
                   type="button"
-                  className="text-sm text-white transition-colors hover:text-[#48FFF6]"
+                  className="text-lg text-white font-bold transition-colors hover:text-[#48FFF6] duration-300"
                 >
                   Forgot password?
                 </button>
@@ -170,7 +166,7 @@ function Login({ servicesManager }) {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full rounded-lg bg-gradient-to-r from-[#5ACCE6] to-[#48FFF6] px-6 py-3 font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:shadow-[#48FFF6]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-full bg-gradient-to-b from-[#2E86D5] to-[#48FFF6] px-6 py-3 font-semibold text-[#001236] shadow-lg transition-all hover:shadow-xl hover:shadow-[#48FFF6]/20 disabled:cursor-not-allowed disabled:opacity-50 duration-150"
               >
                 {isLoading ? 'Logging in...' : 'Login'}
               </button>
@@ -178,11 +174,11 @@ function Login({ servicesManager }) {
 
             {/* Signup Link */}
             <div className="mt-6 text-center">
-              <span className="text-sm text-white">
+              <span className="text-lg font-bold text-white">
                 New user?{' '}
                 <button
                   type="button"
-                  className="text-sm font-semibold text-[#48FFF6] transition-colors hover:text-[#5ACCE6]"
+                  className="text-[#48FFF6] transition-colors hover:text-[#5ACCE6] duration-300"
                 >
                   Signup
                 </button>
@@ -193,11 +189,11 @@ function Login({ servicesManager }) {
 
         {/* Skull image on the right - 55% width */}
         <div
-          className="relative flex h-full items-center justify-center overflow-hidden"
+          className="relative flex h-full items-center justify-center overflow-hidden bg-[#2E86D51A]"
           style={{ width: '55%' }}
         >
           <img
-            src={`${publicUrl}assets/login/login-skull.svg`}
+            src={`${publicUrl}assets/login/login-skull.png`}
             alt="Medical skull"
             className="h-full w-full object-cover object-center"
             style={{
@@ -213,15 +209,8 @@ function Login({ servicesManager }) {
             onLoad={() => {
               console.log(
                 'Skull image loaded successfully from:',
-                `${publicUrl}assets/login/login-skull.svg`
+                `${publicUrl}assets/login/login-skull.png`
               );
-            }}
-          />
-          {/* Overlay gradient to blend image with container */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background: 'linear-gradient(to left, rgba(10, 22, 40, 0.4) 0%, transparent 30%)',
             }}
           />
         </div>
