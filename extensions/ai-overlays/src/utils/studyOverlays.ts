@@ -6,7 +6,12 @@ import { AppTypes } from '@ohif/core';
 export function getDisplaySetIdentifier(displaySet: AppTypes.DisplaySet): string {
   // Use displaySetInstanceUID as the primary identifier
   // Fallback to SeriesInstanceUID or label if needed
-  return displaySet.displaySetInstanceUID || displaySet.SeriesInstanceUID || displaySet.label || 'unknown';
+  return (
+    displaySet.displaySetInstanceUID ||
+    displaySet.SeriesInstanceUID ||
+    displaySet.label ||
+    'unknown'
+  );
 }
 
 /**
@@ -19,7 +24,7 @@ export function generateOverlayColor(displaySetId: string, layerType: 'heatmap' 
   let hash = 0;
   for (let i = 0; i < hashString.length; i++) {
     const char = hashString.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
 
@@ -39,19 +44,33 @@ export function generateOverlayColor(displaySetId: string, layerType: 'heatmap' 
   const x = c * (1 - Math.abs(((h * 6) % 2) - 1));
   const m = l - c / 2;
 
-  let r = 0, g = 0, b = 0;
-  if (h < 1/6) {
-    r = c; g = x; b = 0;
-  } else if (h < 2/6) {
-    r = x; g = c; b = 0;
-  } else if (h < 3/6) {
-    r = 0; g = c; b = x;
-  } else if (h < 4/6) {
-    r = 0; g = x; b = c;
-  } else if (h < 5/6) {
-    r = x; g = 0; b = c;
+  let r = 0,
+    g = 0,
+    b = 0;
+  if (h < 1 / 6) {
+    r = c;
+    g = x;
+    b = 0;
+  } else if (h < 2 / 6) {
+    r = x;
+    g = c;
+    b = 0;
+  } else if (h < 3 / 6) {
+    r = 0;
+    g = c;
+    b = x;
+  } else if (h < 4 / 6) {
+    r = 0;
+    g = x;
+    b = c;
+  } else if (h < 5 / 6) {
+    r = x;
+    g = 0;
+    b = c;
   } else {
-    r = c; g = 0; b = x;
+    r = c;
+    g = 0;
+    b = x;
   }
 
   r = Math.round((r + m) * 255);
@@ -65,7 +84,9 @@ export function generateOverlayColor(displaySetId: string, layerType: 'heatmap' 
  * Get all display sets from all active studies that can have AI overlays
  * This includes all display sets except unsupported ones and non-image types
  */
-export function getAllDisplaySetsForOverlays(displaySetService: AppTypes.Services.DisplaySetService): AppTypes.DisplaySet[] {
+export function getAllDisplaySetsForOverlays(
+  displaySetService: AppTypes.Services.DisplaySetService
+): AppTypes.DisplaySet[] {
   const allDisplaySets = displaySetService.getActiveDisplaySets();
 
   console.log('[AI Overlays] Total display sets:', allDisplaySets.length);
@@ -75,13 +96,19 @@ export function getAllDisplaySetsForOverlays(displaySetService: AppTypes.Service
   const validDisplaySets = allDisplaySets.filter(displaySet => {
     // Exclude unsupported display sets
     if (displaySet.unsupported) {
-      console.log('[AI Overlays] Excluding unsupported display set:', displaySet.displaySetInstanceUID);
+      console.log(
+        '[AI Overlays] Excluding unsupported display set:',
+        displaySet.displaySetInstanceUID
+      );
       return false;
     }
 
     // Exclude display sets without StudyInstanceUID (shouldn't happen, but safety check)
     if (!displaySet.StudyInstanceUID) {
-      console.log('[AI Overlays] Excluding display set without StudyInstanceUID:', displaySet.displaySetInstanceUID);
+      console.log(
+        '[AI Overlays] Excluding display set without StudyInstanceUID:',
+        displaySet.displaySetInstanceUID
+      );
       return false;
     }
 
@@ -91,7 +118,11 @@ export function getAllDisplaySetsForOverlays(displaySetService: AppTypes.Service
       // Check if it's a display set type that typically doesn't have images
       const nonImageModalities = ['SR', 'PR', 'KO', 'AU', 'PDF'];
       if (displaySet.Modality && nonImageModalities.includes(displaySet.Modality)) {
-        console.log('[AI Overlays] Excluding non-image modality:', displaySet.Modality, displaySet.displaySetInstanceUID);
+        console.log(
+          '[AI Overlays] Excluding non-image modality:',
+          displaySet.Modality,
+          displaySet.displaySetInstanceUID
+        );
         return false;
       }
       // If no modality info and no images, still include it (might be a valid display set)
@@ -138,27 +169,43 @@ export function getViewportStudyUID(
  */
 export function getAllStudiesOverlayLayers(
   displaySetService: AppTypes.Services.DisplaySetService
-): Map<string, Array<{ id: string; label: string; file: string; defaultOpacity?: number; color?: string; displaySetId: string; studyUID: string }>> {
+): Map<
+  string,
+  Array<{
+    id: string;
+    label: string;
+    file: string;
+    defaultOpacity?: number;
+    color?: string;
+    displaySetId: string;
+    studyUID: string;
+  }>
+> {
   const allDisplaySets = getAllDisplaySetsForOverlays(displaySetService);
   const layersMap = new Map<string, Array<any>>();
 
-  console.log('[AI Overlays] Found display sets for overlays:', allDisplaySets.length, allDisplaySets.map(ds => ({
-    id: ds.displaySetInstanceUID,
-    modality: ds.Modality,
-    studyUID: ds.StudyInstanceUID,
-    seriesDesc: ds.SeriesDescription,
-    label: ds.label,
-  })));
+  console.log(
+    '[AI Overlays] Found display sets for overlays:',
+    allDisplaySets.length,
+    allDisplaySets.map(ds => ({
+      id: ds.displaySetInstanceUID,
+      modality: ds.Modality,
+      studyUID: ds.StudyInstanceUID,
+      seriesDesc: ds.SeriesDescription,
+      label: ds.label,
+    }))
+  );
 
   allDisplaySets.forEach(displaySet => {
     const studyUID = displaySet.StudyInstanceUID;
     const displaySetId = getDisplaySetIdentifier(displaySet);
 
     // Get a friendly name for the display set
-    const displaySetName = displaySet.SeriesDescription ||
-                          displaySet.label ||
-                          `${displaySet.Modality || 'Series'}-${displaySet.SeriesNumber || ''}`.trim() ||
-                          `Series-${displaySetId.substring(0, 8)}`;
+    const displaySetName =
+      displaySet.SeriesDescription ||
+      displaySet.label ||
+      `${displaySet.Modality || 'Series'}-${displaySet.SeriesNumber || ''}`.trim() ||
+      `Series-${displaySetId.substring(0, 8)}`;
 
     if (!layersMap.has(studyUID)) {
       layersMap.set(studyUID, []);
@@ -201,7 +248,15 @@ export function getAllStudiesOverlayLayers(
 export function getStudyOverlayLayers(
   studyInstanceUID: string,
   displaySetService: AppTypes.Services.DisplaySetService
-): Array<{ id: string; label: string; file: string; defaultOpacity?: number; color?: string; displaySetId: string; studyUID: string }> {
+): Array<{
+  id: string;
+  label: string;
+  file: string;
+  defaultOpacity?: number;
+  color?: string;
+  displaySetId: string;
+  studyUID: string;
+}> {
   const allLayersMap = getAllStudiesOverlayLayers(displaySetService);
   return allLayersMap.get(studyInstanceUID) || [];
 }

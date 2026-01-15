@@ -208,12 +208,12 @@ export const toolbarSections = {
     'MeasurementTools',
     'Zoom',
     'Pan',
-    // 'TrackballRotate',
+    'TrackballRotate',
     'WindowLevel',
-    // 'Capture',
-    // 'Layout',
-    // 'Crosshairs',
-    // 'MoreTools',
+    'Capture',
+    'Layout',
+    'Crosshairs',
+    'MoreTools',
   ],
 
   [TOOLBAR_SECTIONS.viewportActionMenu.topLeft]: [

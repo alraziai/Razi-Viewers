@@ -139,7 +139,7 @@ export default function OverlayPanel() {
                   <div className="mb-1 flex justify-between text-xs">
                     <span className="text-white">Score: {item.value}</span>
                   </div>
-                  <div className="text-white text-xs">{item.recommendation}</div>
+                  <div className="text-xs text-white">{item.recommendation}</div>
                 </div>
               ))}
             </div>
