@@ -37,7 +37,7 @@ interface HeaderProps {
 function Header({
   children,
   menuOptions,
-  isReturnEnabled = true,
+  isReturnEnabled = false,
   onClickReturnButton,
   isSticky = false,
   WhiteLabeling,
