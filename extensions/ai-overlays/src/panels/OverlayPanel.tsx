@@ -1,64 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useSystem } from '@ohif/core';
-
-// Dummy data for summary tables
-const dummySummaryData = {
-  studyMetrics: [
-    { metric: 'Total Lesions', value: '12', unit: 'count' },
-    { metric: 'Average Size', value: '3.4', unit: 'cm³' },
-    { metric: 'Largest Lesion', value: '8.2', unit: 'cm³' },
-    { metric: 'Total Volume', value: '41.8', unit: 'cm³' },
-  ],
-  findings: [
-    {
-      finding: 'Mass detected',
-      location: 'Right upper lobe',
-      confidence: '95%',
-      status: 'Confirmed',
-    },
-    {
-      finding: 'Nodule detected',
-      location: 'Left lower lobe',
-      confidence: '87%',
-      status: 'Pending',
-    },
-    {
-      finding: 'Opacity detected',
-      location: 'Right middle lobe',
-      confidence: '72%',
-      status: 'Review',
-    },
-  ],
-  aiAnalysis: [
-    {
-      analysis: 'Malignancy Risk',
-      score: 'High',
-      value: '0.82',
-      recommendation: 'Biopsy recommended',
-    },
-    {
-      analysis: 'Growth Rate',
-      score: 'Moderate',
-      value: '0.15',
-      recommendation: 'Follow-up in 3 months',
-    },
-    {
-      analysis: 'Texture Analysis',
-      score: 'Irregular',
-      value: 'N/A',
-      recommendation: 'Further imaging',
-    },
-  ],
-};
+import { diagnosisStore } from '../diagnosisStore';
+import { getViewportStudyUID } from '../utils/studyOverlays';
 
 export default function OverlayPanel() {
   const { servicesManager } = useSystem();
-  const { viewportGridService } = servicesManager.services;
+  const { viewportGridService, displaySetService } = servicesManager.services;
 
-  // Get initial active viewport ID
   const [activeViewportId, setActiveViewportId] = useState<string | null>(
     viewportGridService.getState().activeViewportId
   );
+  const [studyUID, setStudyUID] = useState<string | null>(null);
+  const [diagnoses, setDiagnoses] = useState<any[]>([]);
 
   // Subscribe to viewport changes
   useEffect(() => {
@@ -76,74 +29,166 @@ export default function OverlayPanel() {
     };
   }, [viewportGridService]);
 
+  // Update study UID when viewport changes
+  useEffect(() => {
+    if (!activeViewportId) {
+      setStudyUID(null);
+      return;
+    }
+
+    const currentStudyUID = getViewportStudyUID(activeViewportId, viewportGridService, displaySetService);
+    setStudyUID(currentStudyUID);
+  }, [activeViewportId, viewportGridService, displaySetService]);
+
+  // Subscribe to diagnosis store and update when diagnoses change
+  useEffect(() => {
+    const updateDiagnoses = () => {
+      if (!studyUID) {
+        setDiagnoses([]);
+        return;
+      }
+
+      const storeDiagnoses = diagnosisStore.getDiagnoses(studyUID);
+      console.log('[Overlay Panel] Updated diagnoses:', storeDiagnoses.length);
+      setDiagnoses(storeDiagnoses);
+    };
+
+    // Initial update
+    updateDiagnoses();
+
+    // Subscribe to changes
+    const unsubscribe = diagnosisStore.subscribe(updateDiagnoses);
+
+    return unsubscribe;
+  }, [studyUID]);
+
+  // Calculate metrics from diagnoses
+  const metrics = React.useMemo(() => {
+    const totalDiagnoses = diagnoses.length;
+    const totalImages = diagnoses.reduce((sum, d) => sum + (d.diagnose_images?.length || 0), 0);
+    const statusCounts = diagnoses.reduce((acc, d) => {
+      const status = d.status || 'unknown';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      totalDiagnoses,
+      totalImages,
+      statusCounts,
+    };
+  }, [diagnoses]);
+
   return (
     <div className="h-full overflow-auto bg-black p-4">
-      <div className="mb-4 text-lg font-semibold text-white">Summary</div>
+      <div className="mb-4 text-lg font-semibold text-white">AI Diagnosis Summary</div>
       {!activeViewportId ? (
         <div className="text-sm text-white">No active viewport. Please select a viewport.</div>
+      ) : !studyUID ? (
+        <div className="text-sm text-white">No study loaded in viewport.</div>
+      ) : diagnoses.length === 0 ? (
+        <div className="text-sm text-white">
+          <p className="mb-2">Waiting for AI diagnosis data...</p>
+          <p className="text-xs text-white/60">
+            Diagnosis data will appear here when received from the dashboard.
+          </p>
+        </div>
       ) : (
         <div className="space-y-4">
-          {/* Study Metrics Table */}
+          {/* Study Metrics */}
           <div className="rounded bg-[#083A4A] p-3">
             <div className="mb-2 text-sm font-semibold text-white">Study Metrics</div>
             <div className="space-y-2">
-              {dummySummaryData.studyMetrics.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="border-primary-dark flex justify-between border-b pb-1 text-sm"
-                >
-                  <span className="text-white">{item.metric}</span>
-                  <span className="text-white">
-                    {item.value} <span className="text-white">{item.unit}</span>
-                  </span>
+              <div className="border-primary-dark flex justify-between border-b pb-1 text-sm">
+                <span className="text-white">Total Diagnoses</span>
+                <span className="text-white">{metrics.totalDiagnoses}</span>
+              </div>
+              <div className="border-primary-dark flex justify-between border-b pb-1 text-sm">
+                <span className="text-white">Total Overlay Images</span>
+                <span className="text-white">{metrics.totalImages}</span>
+              </div>
+              {Object.entries(metrics.statusCounts).map(([status, count]) => (
+                <div key={status} className="border-primary-dark flex justify-between border-b pb-1 text-sm">
+                  <span className="text-white capitalize">{status}</span>
+                  <span className="text-white">{count}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Findings Table */}
+          {/* Diagnoses Details */}
           <div className="rounded bg-[#083A4A] p-3">
-            <div className="mb-2 text-sm font-semibold text-white">Findings</div>
+            <div className="mb-2 text-sm font-semibold text-white">Diagnoses</div>
             <div className="space-y-2">
-              {dummySummaryData.findings.map((item, idx) => (
+              {diagnoses.map((diagnosis, idx) => (
                 <div
-                  key={idx}
+                  key={diagnosis.id}
                   className="border-primary-dark border-b pb-2 text-sm last:border-b-0"
                 >
                   <div className="mb-1 flex justify-between">
-                    <span className="font-medium text-white">{item.finding}</span>
-                    <span className="text-white">{item.confidence}</span>
+                    <span className="font-medium text-white">Diagnosis #{diagnosis.id}</span>
+                    <span className="text-white capitalize">{diagnosis.status || 'Unknown'}</span>
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-white">{item.location}</span>
-                    <span className="text-white">{item.status}</span>
+                  {diagnosis.diagnose_images && diagnosis.diagnose_images.length > 0 && (
+                    <div className="text-xs text-white/70">
+                      {diagnosis.diagnose_images.length} overlay image{diagnosis.diagnose_images.length > 1 ? 's' : ''}: {' '}
+                      {diagnosis.diagnose_images.map((img: any) => img.type).join(', ')}
+                    </div>
+                  )}
+                  {diagnosis.observation && (
+                    <div className="mt-1 text-xs text-white/80">
+                      <span className="text-white/60">Observation: </span>
+                      {diagnosis.observation}
+                    </div>
+                  )}
+                  {diagnosis.report && (
+                    <div className="mt-1 text-xs text-white/80">
+                      <span className="text-white/60">Report: </span>
+                      {diagnosis.report}
+                    </div>
+                  )}
+                  <div className="mt-1 text-xs text-white/50">
+                    Series: {diagnosis.series_uid?.slice(-12) || diagnosis.dicom_instance_uid?.slice(-12) || 'N/A'}
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* AI Analysis Table */}
-          <div className="rounded bg-[#083A4A] p-3">
-            <div className="mb-2 text-sm font-semibold text-white">AI Analysis</div>
-            <div className="space-y-2">
-              {dummySummaryData.aiAnalysis.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="border-primary-dark border-b pb-2 text-sm last:border-b-0"
-                >
-                  <div className="mb-1 flex justify-between">
-                    <span className="font-medium text-white">{item.analysis}</span>
-                    <span className="text-white">{item.score}</span>
-                  </div>
-                  <div className="mb-1 flex justify-between text-xs">
-                    <span className="text-white">Score: {item.value}</span>
-                  </div>
-                  <div className="text-xs text-white">{item.recommendation}</div>
-                </div>
-              ))}
+          {/* Image Types Legend */}
+          {metrics.totalImages > 0 && (
+            <div className="rounded bg-[#083A4A] p-3">
+              <div className="mb-2 text-sm font-semibold text-white">Overlay Types</div>
+              <div className="space-y-1">
+                {[
+                  { type: 'source_img', label: 'Source Image', color: '#00ff00' },
+                  { type: 'contour_img', label: 'Contour', color: '#ff0000' },
+                  { type: 'all_labels_img', label: 'Labels', color: '#ffff00' },
+                  { type: 'alignment_lines_img', label: 'Alignment', color: '#00ffff' },
+                  { type: 'Intervertebral_space_img', label: 'Intervertebral', color: '#ff00ff' },
+                ].map(({ type, label, color }) => {
+                  const count = diagnoses.reduce(
+                    (sum, d) =>
+                      sum + (d.diagnose_images?.filter((img: any) => img.type === type).length || 0),
+                    0
+                  );
+                  if (count === 0) return null;
+                  return (
+                    <div key={type} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-3 w-3 rounded"
+                          style={{ backgroundColor: color }}
+                        />
+                        <span className="text-white">{label}</span>
+                      </div>
+                      <span className="text-white">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>
