@@ -3,7 +3,8 @@ import { cn, Icons, useIconPresentation, Popover, PopoverTrigger, PopoverContent
 import { useSystem } from '@ohif/core';
 import { Enums } from '@cornerstonejs/core';
 import { createOverlayService } from '../../overlayService';
-import { getViewportStudyUID, getStudyOverlayLayers, getDisplaySetIdentifier } from '../../utils/studyOverlays';
+import { getViewportStudyUID, getDisplaySetIdentifier } from '../../utils/studyOverlays';
+import { diagnosisStore } from '../../diagnosisStore';
 
 type LayerDef = {
   id: string;
@@ -13,6 +14,8 @@ type LayerDef = {
   color?: string;
   displaySetId?: string;
   studyUID?: string;
+  diagnosisId?: number;
+  imageType?: string;
 };
 
 function ViewportAIOverlaysMenu({
@@ -45,21 +48,38 @@ function ViewportAIOverlaysMenu({
   const prevDisplaySetIdsRef = useRef<string[]>([]);
   const enabledRef = useRef<Record<string, boolean>>({});
 
-  // Get study UID for this viewport and get all study layers
+  // Subscribe to diagnosis store changes and update layers
+  useEffect(() => {
+    const unsubscribe = diagnosisStore.subscribe(() => {
+      if (!studyUID) return;
+      
+      // Get layers from diagnosis store
+      const storeLayers = diagnosisStore.getLayers(studyUID);
+      console.log('[AI Overlays Menu] Diagnosis store updated, layers:', storeLayers.length);
+      setAllStudyLayers(storeLayers);
+    });
+
+    return unsubscribe;
+  }, [studyUID]);
+
+  // Get study UID for this viewport and get layers from diagnosis store
   useEffect(() => {
     if (!viewportId) return;
 
     const updateStudyLayers = () => {
       const currentStudyUID = getViewportStudyUID(viewportId, viewportGridService, displaySetService);
       console.log('[AI Overlays Menu] Viewport study UID:', currentStudyUID, 'Viewport ID:', viewportId);
+      
       if (currentStudyUID) {
         if (currentStudyUID !== studyUID) {
           setStudyUID(currentStudyUID);
           setEnabled({}); // Reset enabled state when study changes
         }
-        const studyLayers = getStudyOverlayLayers(currentStudyUID, displaySetService);
-        console.log('[AI Overlays Menu] Study layers found:', studyLayers.length, studyLayers);
-        setAllStudyLayers(studyLayers);
+        
+        // Get layers from diagnosis store (real data from dashboard)
+        const storeLayers = diagnosisStore.getLayers(currentStudyUID);
+        console.log('[AI Overlays Menu] Layers from diagnosis store:', storeLayers.length);
+        setAllStudyLayers(storeLayers);
       } else {
         console.log('[AI Overlays Menu] No study UID found for viewport');
         setAllStudyLayers([]);
@@ -100,17 +120,24 @@ function ViewportAIOverlaysMenu({
         .map(uid => displaySetService.getDisplaySetByUID(uid))
         .filter(Boolean);
 
-      // Get display set IDs using the same function as used for layer creation
-      // This ensures we match correctly with the layer's displaySetId
+      // Get display set IDs
       const displaySetIds = displaySets.map(ds => getDisplaySetIdentifier(ds));
-      setCurrentDisplaySetIds(displaySetIds);
+      
+      // Also get series instance UIDs to match with diagnosis data
+      const seriesUIDs = displaySets.map(ds => ds.SeriesInstanceUID).filter(Boolean);
+      
+      setCurrentDisplaySetIds([...displaySetIds, ...seriesUIDs]);
 
-      console.log('[AI Overlays Menu] Current display sets:', displaySetIds, displaySets.map(ds => ({
-        displaySetInstanceUID: ds.displaySetInstanceUID,
-        SeriesInstanceUID: ds.SeriesInstanceUID,
-        label: ds.label,
-        SeriesDescription: ds.SeriesDescription,
-      })));
+      console.log('[AI Overlays Menu] Current display sets:', {
+        displaySetIds,
+        seriesUIDs,
+        displaySets: displaySets.map(ds => ({
+          displaySetInstanceUID: ds.displaySetInstanceUID,
+          SeriesInstanceUID: ds.SeriesInstanceUID,
+          label: ds.label,
+          SeriesDescription: ds.SeriesDescription,
+        }))
+      });
     };
 
     // Initial update
@@ -140,15 +167,13 @@ function ViewportAIOverlaysMenu({
       return;
     }
 
-    // Filter layers to only include those matching current display set IDs
-    // Each layer has a displaySetId property that matches the displaySetInstanceUID
+    // Filter layers to only include those matching current display set IDs or series UIDs
     const filteredLayers = allStudyLayers.filter(layer => {
-      // Extract displaySetId from layer.id (format: "heatmap-{displaySetId}" or "mask-{displaySetId}")
-      const layerDisplaySetId = (layer as any).displaySetId;
+      const layerDisplaySetId = layer.displaySetId;
       return layerDisplaySetId && currentDisplaySetIds.includes(layerDisplaySetId);
     });
 
-    console.log('[AI Overlays Menu] Filtered layers for current display sets:', filteredLayers.length, filteredLayers);
+    console.log('[AI Overlays Menu] Filtered layers for current display sets:', filteredLayers.length);
     setLayers(filteredLayers);
   }, [allStudyLayers, currentDisplaySetIds]);
 
@@ -167,7 +192,7 @@ function ViewportAIOverlaysMenu({
       prevDisplaySetIdsRef.current.some((id, idx) => id !== currentDisplaySetIds[idx]);
 
     if (!displaySetIdsChanged) {
-      return; // No change, skip
+      return;
     }
 
     // Update ref
@@ -177,21 +202,21 @@ function ViewportAIOverlaysMenu({
     const currentLayerIds = currentDisplaySetIds.length > 0
       ? allStudyLayers
           .filter(layer => {
-            const layerDisplaySetId = (layer as any).displaySetId;
+            const layerDisplaySetId = layer.displaySetId;
             return layerDisplaySetId && currentDisplaySetIds.includes(layerDisplaySetId);
           })
           .map(layer => layer.id)
       : [];
 
-    // Get current enabled state from ref (most up-to-date)
+    // Get current enabled state from ref
     const currentEnabled = enabledRef.current;
 
-    // Find layers that need to be hidden (don't belong to current display set but are enabled)
+    // Find layers that need to be hidden
     const layersToHide = Object.keys(currentEnabled).filter(
       layerId => currentEnabled[layerId] && !currentLayerIds.includes(layerId)
     );
 
-    // Hide layers immediately before updating state
+    // Hide layers immediately
     if (layersToHide.length > 0) {
       console.log('[AI Overlays Menu] Hiding layers from previous display set:', layersToHide);
       layersToHide.forEach(layerId => {
@@ -201,7 +226,7 @@ function ViewportAIOverlaysMenu({
       });
     }
 
-    // Update enabled state to only keep layers for current display sets
+    // Update enabled state
     setEnabled(prev => {
       const updated: Record<string, boolean> = {};
       currentLayerIds.forEach(layerId => {
@@ -213,15 +238,13 @@ function ViewportAIOverlaysMenu({
     });
   }, [currentDisplaySetIds, allStudyLayers, viewportId, overlay]);
 
-  // Detect base imageId for the viewport and listen to image changes
+  // Detect base imageId for the viewport
   useEffect(() => {
     if (!viewportId) return;
 
-    // Wait a bit for viewport to be ready
     const checkViewport = () => {
       const vp = cornerstoneViewportService.getCornerstoneViewport(viewportId);
       if (!vp) {
-        // Retry after a short delay if viewport isn't ready
         setTimeout(checkViewport, 100);
         return;
       }
@@ -233,10 +256,8 @@ function ViewportAIOverlaysMenu({
         }
       };
 
-      // Get initial image ID
       updateImageId();
 
-      // Listen to image changes
       const element = vp.element;
       if (element) {
         element.addEventListener(Enums.Events.IMAGE_RENDERED, updateImageId);
@@ -254,26 +275,21 @@ function ViewportAIOverlaysMenu({
   // Apply overlays on enable/viewport change
   useEffect(() => {
     if (!viewportId || !baseImageId) {
-      // Clean up if we don't have what we need
       if (viewportId) {
         overlay.removeAll(viewportId);
       }
       return;
     }
 
-    // Small delay to ensure viewport is fully ready
     const timeoutId = setTimeout(async () => {
-      // First, ensure all layers are added (but may be hidden)
       for (const layer of layers) {
         if (layer.file) {
-          // Check if layer already exists
           const layerExists = overlay.hasLayer?.(viewportId, layer.id);
           if (!layerExists) {
             console.log('[AI Overlays Menu] Adding layer:', layer.id, layer.file);
             await overlay.addLayer(viewportId, layer, baseImageId);
           }
 
-          // Show or hide based on enabled state
           overlay.show(viewportId, layer.id, enabled[layer.id] || false);
         }
       }
@@ -300,8 +316,10 @@ function ViewportAIOverlaysMenu({
   };
 
   const { align, side } = toolbarService.getAlignAndSide(Number(location));
-
   const Icon = <Icons.GroupLayers className={iconClassName} />;
+
+  // Check if we have diagnoses for this study
+  const hasDiagnosisData = studyUID ? diagnosisStore.hasDiagnoses(studyUID) : false;
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
@@ -339,7 +357,9 @@ function ViewportAIOverlaysMenu({
       >
         {layers.length === 0 ? (
           <div className="px-2 py-2 text-sm text-white">
-            No AI overlay layers available for this study.
+            {hasDiagnosisData 
+              ? 'No AI overlays available for this image series.'
+              : 'Waiting for AI diagnosis data from dashboard...'}
           </div>
         ) : (
           layers.map(layer => (
