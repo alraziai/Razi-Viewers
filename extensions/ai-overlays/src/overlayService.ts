@@ -247,7 +247,7 @@ export function createOverlayService(servicesManager: ServicesManager) {
         const ctx = dummyCanvas.getContext('2d');
         if (ctx) {
           // Fill with semi-transparent color for testing
-          ctx.fillStyle = layer.color || '#ff0000';
+          ctx.fillStyle = layer.color || 'transparent';
           ctx.globalAlpha = 0.3;
           ctx.fillRect(0, 0, 512, 512);
         }
@@ -266,7 +266,7 @@ export function createOverlayService(servicesManager: ServicesManager) {
           dummyCanvas.height = 512;
           const ctx = dummyCanvas.getContext('2d');
           if (ctx) {
-            ctx.fillStyle = layer.color || '#ff0000';
+            ctx.fillStyle = layer.color || 'transparent';
             ctx.globalAlpha = 0.3;
             ctx.fillRect(0, 0, 512, 512);
           }

@@ -185,13 +185,13 @@ class DiagnosisStore {
    */
   private getOverlayColor(type: string): string {
     const colorMap: Record<string, string> = {
-      source_img: '#00ff00',          // Green for source
-      contour_img: '#ff0000',         // Red for contours
-      all_labels_img: '#ffff00',      // Yellow for labels
-      alignment_lines_img: '#00ffff', // Cyan for alignment
-      Intervertebral_space_img: '#ff00ff', // Magenta for intervertebral
+      //       source_img: '#00ff00',          // Green for source
+      //       contour_img: '#ff0000',         // Red for contours
+      //       all_labels_img: '#ffff00',      // Yellow for labels
+      //       alignment_lines_img: '#00ffff', // Cyan for alignment
+      //       Intervertebral_space_img: '#ff00ff', // Magenta for intervertebral
     };
-    return colorMap[type] || '#ffffff';
+    return colorMap[type] || 'transparent';
   }
 
   /**

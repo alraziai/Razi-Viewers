@@ -319,7 +319,9 @@ export default function OverlayPanel() {
                     {diagnosis.report && (
                       <div className="mt-2 text-xs text-white/80">
                         <span className="font-semibold text-white">Report: </span>
-                        {diagnosis.report}
+                        {typeof diagnosis.report === 'string' 
+                          ? diagnosis.report 
+                          : JSON.stringify(diagnosis.report)}
                       </div>
                     )}
 
@@ -340,11 +342,11 @@ export default function OverlayPanel() {
               <div className="mb-2 text-sm font-semibold text-white">Overlay Types</div>
               <div className="space-y-1">
                 {[
-                  { type: 'source_img', label: 'Source Image', color: '#00ff00' },
-                  { type: 'contour_img', label: 'Contour', color: '#ff0000' },
-                  { type: 'all_labels_img', label: 'Labels', color: '#ffff00' },
-                  { type: 'alignment_lines_img', label: 'Alignment', color: '#00ffff' },
-                  { type: 'Intervertebral_space_img', label: 'Intervertebral', color: '#ff00ff' },
+                  { type: 'source_img', label: 'Source Image', color: 'transparent' },
+                  { type: 'contour_img', label: 'Contour', color: 'transparent' },
+                  { type: 'all_labels_img', label: 'Labels', color: 'transparent' },
+                  { type: 'alignment_lines_img', label: 'Alignment', color: 'transparent' },
+                  { type: 'Intervertebral_space_img', label: 'Intervertebral', color: 'transparent' },
                 ].map(({ type, label, color }) => {
                   const count = diagnoses.reduce(
                     (sum, d) =>

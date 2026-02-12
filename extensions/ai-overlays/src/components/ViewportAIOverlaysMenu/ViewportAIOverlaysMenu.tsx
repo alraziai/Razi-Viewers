@@ -52,7 +52,7 @@ function ViewportAIOverlaysMenu({
   useEffect(() => {
     const unsubscribe = diagnosisStore.subscribe(() => {
       if (!studyUID) return;
-      
+
       // Get layers from diagnosis store
       const storeLayers = diagnosisStore.getLayers(studyUID);
       console.log('[AI Overlays Menu] Diagnosis store updated, layers:', storeLayers.length);
@@ -69,13 +69,13 @@ function ViewportAIOverlaysMenu({
     const updateStudyLayers = () => {
       const currentStudyUID = getViewportStudyUID(viewportId, viewportGridService, displaySetService);
       console.log('[AI Overlays Menu] Viewport study UID:', currentStudyUID, 'Viewport ID:', viewportId);
-      
+
       if (currentStudyUID) {
         if (currentStudyUID !== studyUID) {
           setStudyUID(currentStudyUID);
           setEnabled({}); // Reset enabled state when study changes
         }
-        
+
         // Get layers from diagnosis store (real data from dashboard)
         const storeLayers = diagnosisStore.getLayers(currentStudyUID);
         console.log('[AI Overlays Menu] Layers from diagnosis store:', storeLayers.length);
@@ -122,10 +122,10 @@ function ViewportAIOverlaysMenu({
 
       // Get display set IDs
       const displaySetIds = displaySets.map(ds => getDisplaySetIdentifier(ds));
-      
+
       // Also get series instance UIDs to match with diagnosis data
       const seriesUIDs = displaySets.map(ds => ds.SeriesInstanceUID).filter(Boolean);
-      
+
       setCurrentDisplaySetIds([...displaySetIds, ...seriesUIDs]);
 
       console.log('[AI Overlays Menu] Current display sets:', {
@@ -201,11 +201,11 @@ function ViewportAIOverlaysMenu({
     // Get IDs of layers that belong to current display sets
     const currentLayerIds = currentDisplaySetIds.length > 0
       ? allStudyLayers
-          .filter(layer => {
-            const layerDisplaySetId = layer.displaySetId;
-            return layerDisplaySetId && currentDisplaySetIds.includes(layerDisplaySetId);
-          })
-          .map(layer => layer.id)
+        .filter(layer => {
+          const layerDisplaySetId = layer.displaySetId;
+          return layerDisplaySetId && currentDisplaySetIds.includes(layerDisplaySetId);
+        })
+        .map(layer => layer.id)
       : [];
 
     // Get current enabled state from ref
@@ -342,7 +342,7 @@ function ViewportAIOverlaysMenu({
               variant="ghost"
               size="icon"
               disabled={disabled}
-              onClick={() => {}}
+              onClick={() => { }}
             >
               {Icon}
             </Button>
@@ -353,11 +353,14 @@ function ViewportAIOverlaysMenu({
         className="h-auto w-[250px] max-h-[400px] overflow-y-auto flex-shrink-0 flex-col items-start rounded p-1"
         align={align}
         side={side}
-        style={{ left: 0 }}
+        style={{
+          background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+          left: 0
+        }}
       >
         {layers.length === 0 ? (
           <div className="px-2 py-2 text-sm text-white">
-            {hasDiagnosisData 
+            {hasDiagnosisData
               ? 'No AI overlays available for this image series.'
               : 'Waiting for AI diagnosis data from dashboard...'}
           </div>

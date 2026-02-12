@@ -13,6 +13,7 @@ import { IconPresentationProvider } from '@ohif/ui-next';
 import { useUserAuthentication } from '../../contextProviders';
 
 import NavBar from '../NavBar';
+import ReportModal from '../ReportModal';
 
 // Todo: we should move this component to composition and remove props base
 
@@ -48,6 +49,13 @@ function Header({
 }: HeaderProps): ReactNode {
   const [authState] = useUserAuthentication();
   const user = authState?.user;
+  const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
+
+  // Get studyId from URL query params
+  const getStudyIdFromUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('StudyInstanceUIDs') || '';
+  };
 
   // Get user initials
   const getUserInitials = () => {
@@ -85,7 +93,12 @@ function Header({
   };
 
   const handleGenerateReport = () => {
-    // TODO: generate reports in a modal
+    const studyId = getStudyIdFromUrl();
+    if (studyId) {
+      setIsReportModalOpen(true);
+    } else {
+      alert('No study ID found in URL');
+    }
   }
 
   return (
@@ -135,7 +148,7 @@ function Header({
               <button
                 className="text-[#0D0FAF] h-full w-full gap-4 rounded-3xl py-4 px-14 bg-linear-to-b from-[#2E86D5] to-[#48FFF6] text-[12px] font-medium"
                 style={{
-                  background: 'linear-gradient(180deg, #2E86D5, #48FFF6',
+                  background: 'linear-gradient(180deg, #2E86D5, #48FFF6)',
                 }}
                 onClick={handleGenerateReport}
               >
@@ -153,7 +166,7 @@ function Header({
                     <div
                       className="flex h-[32px] w-[32px] items-center justify-center rounded-full text-[12px] font-medium text-white"
                       style={{
-                        background: 'linear-gradient(180deg, #2E86D5, #48FFF6',
+                        background: 'linear-gradient(180deg, #2E86D5, #48FFF6)',
                       }}
                     >
                       {getUserInitials()}
@@ -194,6 +207,11 @@ function Header({
           </div>
         </div>
       </NavBar>
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        studyId={getStudyIdFromUrl()}
+      />
     </IconPresentationProvider>
   );
 }
