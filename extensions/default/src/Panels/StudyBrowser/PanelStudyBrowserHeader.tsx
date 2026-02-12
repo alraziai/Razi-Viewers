@@ -17,7 +17,13 @@ function PanelStudyBrowserHeader({
   // Button order: Settings button then List view mode (thumbnails vs. list)
   return (
     <>
-      <div className="bg-[#083A4A] border-b border-[#FFFFFF1A] flex h-[40px] select-none rounded-t p-2">
+      <div className="border-b border-[#FFFFFF1A] flex h-[40px] select-none rounded-t p-2"
+        style={{
+          background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+          borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
+          borderImageSlice: 1,
+        }}
+      >
         <div className={'flex h-[24px] w-full select-none justify-center self-center text-[14px]'}>
           <div className="flex w-full items-center gap-[10px]">
             <div className="flex items-center justify-center">

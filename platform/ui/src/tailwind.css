@@ -6,6 +6,34 @@
 @tailwind utilities;
 
 @layer base {
+
+  	/* Firefox */
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: #d1d5dc oklch(27.8% 0.033 256.848);
+	}
+
+	/* Chrome, Edge, Safari */
+	*::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+
+	*::-webkit-scrollbar-track {
+		background: oklch(27.8% 0.033 256.848);
+		border-radius: 10px;
+	}
+
+	*::-webkit-scrollbar-thumb {
+		background-color: #d1d5dc;
+		border-radius: 10px;
+		border: 2px solid oklch(27.8% 0.033 256.848);
+	}
+
+	*::-webkit-scrollbar-thumb:hover {
+		background-color: #d1d5dc;
+	}
+
   html {
     font-family: 'Inter', sans-serif;
   }

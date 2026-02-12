@@ -58,7 +58,7 @@ const closeIconWidth = 30;
 const gridHorizontalPadding = 10;
 const tabSpacerWidth = 2;
 
-const baseClasses = 'bg-black border-[#FFFFFF1A] justify-start box-content flex flex-col';
+const baseClasses = 'justify-start box-content flex flex-col h-full';
 // const baseClasses = 'bg-gradient-to-b from-[#2E86D5] to-[#48FFF6] border-[#FFFFFF1A] justify-start box-content flex flex-col';
 
 const openStateIconName = {
@@ -347,7 +347,12 @@ const SidePanel = ({
           'absolute flex cursor-pointer items-center justify-center',
           side === 'left' ? 'right-0' : 'left-0'
         )}
-        style={{ width: `${closeIconWidth}px` }}
+        style={{
+          background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+          borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
+          borderImageSlice: 1,
+          width: `${closeIconWidth}px`
+        }}
         onClick={() => {
           updatePanelOpen(!panelOpen);
         }}
@@ -366,21 +371,27 @@ const SidePanel = ({
     return (
       <>
         {getCloseIcon()}
-        <div className={classnames('flex grow justify-center')}>
+        <div className={classnames('flex grow justify-center')}
+          style={{
+            background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+            borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
+            borderImageSlice: 1,
+          }}
+        >
           <div className={classnames('bg-black text-[#48FFF6] flex flex-wrap')}>
             {tabs.map((tab, tabIndex) => {
               const { disabled } = tab;
               return (
                 <React.Fragment key={tabIndex}>
                   {tabIndex % numCols !== 0 && (
-                      <div
-                        className={classnames(
-                          'flex h-[28px] w-[2px] items-center bg-black',
-                          tabSpacerWidth
-                        )}
-                      >
-                        <div className="bg-black h-[20px] w-full"></div>
-                      </div>
+                    <div
+                      className={classnames(
+                        'flex h-[28px] w-[2px] items-center bg-black',
+                        tabSpacerWidth
+                      )}
+                    >
+                      <div className="bg-black h-[20px] w-full"></div>
+                    </div>
                   )}
                   <Tooltip key={tabIndex}>
                     <TooltipTrigger>
@@ -436,6 +447,11 @@ const SidePanel = ({
         )}
         data-cy={`${tabs[0].name}-btn`}
         onClick={() => updatePanelOpen(!panelOpen)}
+        style={{
+          background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+          borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
+          borderImageSlice: 1,
+        }}
       >
         {getCloseIcon()}
         <span>{tabs[0].label}</span>
@@ -446,7 +462,13 @@ const SidePanel = ({
   const getOpenStateComponent = () => {
     return (
       <>
-        <div className="bg-black border-b border-[#FFFFFF1A] flex h-[40px] flex-shrink-0 select-none rounded-t p-2">
+        <div className="border-b border-[#FFFFFF1A] flex h-[40px] flex-shrink-0 select-none rounded-t p-2"
+          style={{
+            background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+            borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
+            borderImageSlice: 1,
+          }}
+        >
           {tabs.length === 1 ? getOneTabComponent() : getTabGridComponent()}
         </div>
         <Separator

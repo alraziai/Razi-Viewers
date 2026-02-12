@@ -6,7 +6,7 @@ import { StudyBrowserSort } from '../StudyBrowserSort';
 import { StudyBrowserViewOptions } from '../StudyBrowserViewOptions';
 import { ScrollArea } from '../ScrollArea';
 
-const noop = () => {};
+const noop = () => { };
 
 const StudyBrowser = ({
   tabs,
@@ -62,12 +62,23 @@ const StudyBrowser = ({
   return (
     <ScrollArea>
       <div
-        className="bg-black flex flex-1 flex-col gap-[4px]"
+        className="flex flex-1 flex-col gap-[4px]"
         data-cy={'studyBrowser-panel'}
+        style={{
+          background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+          borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
+          borderImageSlice: 1,
+        }}
       >
         <div className="flex flex-col gap-[4px]">
           {showSettings && (
-            <div className="w-100 bg-[#083A4A] border-b border-[#FFFFFF1A] flex h-[48px] items-center justify-center gap-[10px] px-[8px] py-[10px]">
+            <div className="w-100 border-b border-[#FFFFFF1A] flex h-[48px] items-center justify-center gap-[10px] px-[8px] py-[10px]"
+              style={{
+                background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+                borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
+                borderImageSlice: 1,
+              }}
+            >
               <>
                 <StudyBrowserViewOptions
                   tabs={tabs}

@@ -24,7 +24,13 @@ export function StudyBrowserViewOptions({ tabs, onSelectTab, activeTabName }: wi
         </TooltipTrigger>
         <TooltipContent>{activeTab?.label}</TooltipContent>
       </Tooltip>
-      <DropdownMenuContent className="bg-[#0A1628] border border-[#FFFFFF1A]">
+      <DropdownMenuContent className="border border-[#FFFFFF1A]"
+        style={{
+          background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+          borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
+          borderImageSlice: 1,
+        }}
+      >
         {tabs.map(tab => {
           const { name, label, studies } = tab;
           const isActive = activeTabName === name;
@@ -39,6 +45,11 @@ export function StudyBrowserViewOptions({ tabs, onSelectTab, activeTabName }: wi
               key={name}
               className={`text-white ${isActive ? 'font-bold' : ''}`}
               onClick={() => handleTabChange(name)}
+              style={{
+                background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+                borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
+                borderImageSlice: 1,
+              }}
             >
               {label}
             </DropdownMenuItem>

@@ -9,7 +9,6 @@
 
 import type { ServicesManager } from "@ohif/core";
 import { createOverlayService } from "./overlayService";
-import { diagnosisStore } from "./diagnosisStore";
 
 type DiagnosisMessage = {
   type: string;
@@ -165,12 +164,6 @@ async function processDiagnoses(
 	const { cornerstoneViewportService, viewportGridService, displaySetService } = (
 		servicesManager as any
 	).services;
-
-	// Store diagnoses in the diagnosis store for panel display
-	if (studyUID) {
-		diagnosisStore.setDiagnoses(studyUID, diagnoses);
-		console.log("[AI Overlays] Stored", diagnoses.length, "diagnoses for study", studyUID);
-	}
 
 	// Get all active viewports
 	const gridState = viewportGridService.getState();

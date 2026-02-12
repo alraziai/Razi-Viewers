@@ -64,6 +64,11 @@ const ScrollArea = React.forwardRef<
         ref={viewportRef}
         className="h-full w-full rounded-[inherit]"
         onScroll={checkScroll}
+        style={{
+          background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+          borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
+          borderImageSlice: 1,
+        }}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>

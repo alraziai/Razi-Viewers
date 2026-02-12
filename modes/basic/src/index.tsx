@@ -281,12 +281,13 @@ export const basicLayout = {
     leftPanels: [ohif.thumbnailList],
     leftPanelResizable: true,
     rightPanels: [
+      '@ohif/extension-ai-overlays.panelModule.ai-overlays-panel',
       cornerstone.segmentation,
       cornerstone.measurements,
-      '@ohif/extension-ai-overlays.panelModule.ai-overlays-panel',
     ],
-    rightPanelClosed: true,
+    rightPanelClosed: false,
     rightPanelResizable: true,
+    rightPanelDefaultWidth: 800,
     viewports: [
       {
         namespace: cornerstone.viewport,

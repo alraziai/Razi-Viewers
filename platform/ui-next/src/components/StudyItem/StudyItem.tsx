@@ -29,13 +29,19 @@ const StudyItem = ({
       type="single"
       collapsible
       onClick={onClick}
-      onKeyDown={() => {}}
+      onKeyDown={() => { }}
       role="button"
       tabIndex={0}
       defaultValue={isActive ? 'study-item' : undefined}
     >
       <AccordionItem value="study-item">
-        <AccordionTrigger className={classnames('hover:bg-[#083A4A] bg-[#0A1628] border-b border-[#FFFFFF1A] group w-full rounded transition-colors', isActive && 'bg-[#083A4A]')}>
+        <AccordionTrigger className={classnames('hover:bg-[#083A4A] border-b border-[#FFFFFF1A] group w-full rounded transition-colors', isActive && 'bg-[#083A4A]')}
+          style={{
+            background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+            borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
+            borderImageSlice: 1,
+          }}
+        >
           <div className="flex h-[40px] w-full flex-row overflow-hidden">
             <div className="flex w-full flex-row items-center justify-between">
               <div className="flex min-w-0 flex-col items-start text-[13px]">

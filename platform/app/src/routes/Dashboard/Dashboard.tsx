@@ -601,7 +601,13 @@ function Dashboard({
           </div>
           <ScrollArea>
             <div className="relative h-full overflow-hidden">
-              <div className="h-full w-full rounded-[inherit]">
+              <div className="h-full w-full rounded-[inherit]"
+                style={{
+                  background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+                  borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
+                  borderImageSlice: 1,
+                }}
+              >
                 <div className="flex grow flex-col gap-6 p-6">
                   {/* Welcome and KPIs Section */}
                   <div>

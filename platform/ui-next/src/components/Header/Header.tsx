@@ -84,6 +84,10 @@ function Header({
     }
   };
 
+  const handleGenerateReport = () => {
+    // TODO: generate reports in a modal
+  }
+
   return (
     <IconPresentationProvider
       size="large"
@@ -126,8 +130,19 @@ function Header({
             {UndoRedo}
             <div className="border-primary-dark mx-1.5 h-[25px] border-r"></div>
             {PatientInfo}
-            <div className="border-primary-dark mx-1.5 h-[25px] border-r"></div>
+            <div className="border-primary-dark mx-1.5 h-[25px] border-r hidden"></div>
             <div className="flex-shrink-0">
+              <button
+                className="text-[#0D0FAF] h-full w-full gap-4 rounded-3xl py-4 px-14 bg-linear-to-b from-[#2E86D5] to-[#48FFF6] text-[12px] font-medium"
+                style={{
+                  background: 'linear-gradient(180deg, #2E86D5, #48FFF6',
+                }}
+                onClick={handleGenerateReport}
+              >
+                Generate Report
+              </button>
+            </div>
+            <div className="flex-shrink-0 hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
