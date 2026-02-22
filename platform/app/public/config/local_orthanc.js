@@ -10,6 +10,9 @@ window.config = {
   showCPUFallbackMessage: true,
   strictZSpacingForVolumeViewport: true,
   // filterQueryParam: false,
+  // Report API configuration
+  reportApiBaseUrl: 'http://35.188.151.244',
+  reportApiPath: '/api/diagnosis',
   defaultDataSourceName: 'orthanc',
   dataSources: [
     {
