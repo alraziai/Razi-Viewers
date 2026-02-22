@@ -13,6 +13,30 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resolvedReportPath, setResolvedReportPath] = useState<string | null>(null);
+
+  const getReportPaths = (reportId: string) => {
+    const config = (window as any)?.config ?? {};
+    const configuredPath = typeof config.reportApiPath === 'string' ? config.reportApiPath : '';
+    const configuredPaths = Array.isArray(config.reportApiPaths)
+      ? config.reportApiPaths.filter((value: unknown) => typeof value === 'string')
+      : [];
+
+    const defaultPaths = ['/api/diagnosis', '/api/diagnoses', '/api/studies'];
+    const basePaths = configuredPaths.length > 0 ? configuredPaths : configuredPath ? [configuredPath] : defaultPaths;
+
+    const paths = basePaths.map(basePath => {
+      const normalized = basePath.startsWith('/') ? basePath : `/${basePath}`;
+      return `${normalized}/${encodeURIComponent(reportId)}/report`;
+    });
+
+    console.info(
+      '[ReportModal] report paths',
+      paths,
+      configuredPaths.length || configuredPath ? '(from config)' : '(default)'
+    );
+    return paths;
+  };
 
   useEffect(() => {
     if (isOpen && studyId) {
@@ -25,15 +49,44 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
     setError(null);
 
     try {
-      const response = await fetch(`http://35.188.151.244/api/diagnoses/${studyId}/report`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const reportPaths = getReportPaths(studyId);
+      let response: Response | null = null;
+      let responsePath = '';
+
+      for (const path of reportPaths) {
+        console.info('[ReportModal] fetchReport trying path', path);
+        const candidate = await fetch(path, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (candidate.ok) {
+          response = candidate;
+          responsePath = path;
+          break;
+        }
+
+        if (candidate.status !== 404) {
+          response = candidate;
+          responsePath = path;
+          break;
+        }
+
+        console.warn('[ReportModal] fetchReport 404 for path', path);
+      }
+
+      if (!response) {
+        throw new Error(`Failed to fetch report: 404 for ${reportPaths.join(', ')}`);
+      }
 
       if (!response.ok) {
         throw new Error(`Failed to fetch report: ${response.status}`);
+      }
+
+      if (responsePath) {
+        setResolvedReportPath(responsePath);
       }
 
       const data = await response.json();
@@ -66,7 +119,10 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
       // Validate JSON before saving
       const parsedData = JSON.parse(editedReport);
 
-      const response = await fetch(`http://35.188.151.244/api/diagnoses/${studyId}/report`, {
+      const targetPath = resolvedReportPath || getReportPaths(studyId)[0];
+      console.info('[ReportModal] handleSave using path', targetPath);
+
+      const response = await fetch(targetPath, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
