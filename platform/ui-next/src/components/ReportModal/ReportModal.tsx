@@ -121,9 +121,7 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
       console.log('DEBUG - Report type:', typeof report);
 
       if (!isJson && typeof report === 'string' && isHtmlDocument(report)) {
-        setError('Report API returned HTML instead of JSON. Check endpoint/proxy.');
-        console.error('[ReportModal] Report response is HTML:', rawBody.slice(0, 200));
-        return;
+        console.warn('[ReportModal] Report response is HTML. Rendering via iframe.');
       }
 
       // Always ensure we stringify the report to a JSON string
@@ -237,13 +235,22 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
                   <span className="text-xs text-yellow-400">● Unsaved changes</span>
                 )}
               </div>
-              <textarea
-                value={typeof editedReport === 'string' ? editedReport : JSON.stringify(editedReport, null, 2)}
-                onChange={(e) => setEditedReport(e.target.value)}
-                className="w-full h-[500px] p-4 bg-[#0D1B2E] border border-white/20 rounded-lg text-white font-mono text-sm resize-none focus:outline-none focus:border-[#48FFF6] focus:ring-1 focus:ring-[#48FFF6]"
-                placeholder="Report data will appear here..."
-                spellCheck={false}
-              />
+              {typeof editedReport === 'string' && isHtmlDocument(editedReport) ? (
+                <iframe
+                  title="Report HTML"
+                  className="w-full h-[500px] border border-white/20 rounded-lg bg-white"
+                  sandbox="allow-scripts allow-same-origin"
+                  srcDoc={editedReport}
+                />
+              ) : (
+                <textarea
+                  value={typeof editedReport === 'string' ? editedReport : JSON.stringify(editedReport, null, 2)}
+                  onChange={(e) => setEditedReport(e.target.value)}
+                  className="w-full h-[500px] p-4 bg-[#0D1B2E] border border-white/20 rounded-lg text-white font-mono text-sm resize-none focus:outline-none focus:border-[#48FFF6] focus:ring-1 focus:ring-[#48FFF6]"
+                  placeholder="Report data will appear here..."
+                  spellCheck={false}
+                />
+              )}
             </div>
           )}
         </div>
