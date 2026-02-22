@@ -144,7 +144,7 @@ export default function OverlayPanel() {
     // Get initial viewport ID
     const gridState = viewportGridService.getState();
     const initialViewportId = gridState?.activeViewportId;
-    
+
     if (initialViewportId) {
       setActiveViewportId(initialViewportId);
       setIsInitialized(true);
@@ -312,16 +312,6 @@ export default function OverlayPanel() {
                       <div className='mt-2'>
                         <div className="mb-1 text-xs font-semibold text-white">Clinical Observations:</div>
                         <ObservationsDisplay observations={observations} />
-                      </div>
-                    )}
-
-                    {/* Report */}
-                    {diagnosis.report && (
-                      <div className="mt-2 text-xs text-white/80">
-                        <span className="font-semibold text-white">Report: </span>
-                        {typeof diagnosis.report === 'string' 
-                          ? diagnosis.report 
-                          : JSON.stringify(diagnosis.report)}
                       </div>
                     )}
 

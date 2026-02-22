@@ -14,6 +14,7 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resolvedReportPath, setResolvedReportPath] = useState<string | null>(null);
+  const [parsedData, setParsedData] = useState<any>(null);
 
   const parseMaybeJson = async (response: Response) => {
     const contentType = response.headers.get('content-type') ?? '';
@@ -33,9 +34,53 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
     return { rawBody, parsed: rawBody, isJson: false };
   };
 
-  const isHtmlDocument = (value: string) => {
-    const trimmed = value.trim().toLowerCase();
-    return trimmed.startsWith('<!doctype') || trimmed.startsWith('<html');
+  // Helper function to get cookie value by name
+  const getCookie = (name: string): string | null => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      const cookieValue = parts.pop()?.split(';').shift();
+      return cookieValue || null;
+    }
+    return null;
+  };
+
+  const getAuthHeaders = () => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // First, try to get token from cookies (shared across localhost ports)
+    let token = getCookie('auth_token') || getCookie('token') || getCookie('authToken') || getCookie('access_token');
+    console.log('[ReportModal] Token from cookies:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
+
+    // Fallback: Try sessionStorage (from postMessage)
+    if (!token) {
+      token = sessionStorage.getItem('ohif_auth_token');
+      console.log('[ReportModal] Token from sessionStorage:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
+    }
+
+    // Fallback: Try to get token from localStorage (if running on same origin)
+    if (!token) {
+      token = localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('access_token');
+      console.log('[ReportModal] Token from localStorage:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
+    }
+
+    // Last resort: Check sessionStorage for other possible token keys
+    if (!token) {
+      token = sessionStorage.getItem('token') || sessionStorage.getItem('authToken');
+      console.log('[ReportModal] Token from sessionStorage (alt keys):', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
+    }
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      console.log('[ReportModal] ✅ Authorization header set:', `Bearer ${token.substring(0, 20)}...`);
+    } else {
+      console.warn('[ReportModal] ❌ NO TOKEN FOUND - API request will fail!');
+      console.log('[ReportModal] Available cookies:', document.cookie);
+    }
+
+    return headers;
   };
 
   const isAbsoluteUrl = (value: string) => /^https?:\/\//i.test(value) || value.startsWith('//');
@@ -61,10 +106,6 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
       return '';
     }
 
-    if (isHtmlDocument(trimmed)) {
-      return ' (server returned HTML)';
-    }
-
     const snippet = trimmed.length > 300 ? `${trimmed.slice(0, 300)}…` : trimmed;
     return ` ${snippet}`;
   };
@@ -76,6 +117,8 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
       ? config.reportApiPaths.filter((value: unknown) => typeof value === 'string')
       : [];
 
+    const apiBaseUrl = typeof config.reportApiBaseUrl === 'string' ? config.reportApiBaseUrl : '';
+
     const defaultPaths = ['/api/diagnosis', '/api/diagnoses', '/api/studies'];
     const basePaths = configuredPaths.length > 0 ? configuredPaths : configuredPath ? [configuredPath] : defaultPaths;
 
@@ -83,13 +126,21 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
     const idsToTry = reportIds.length > 0 ? reportIds : [reportId];
     const paths = basePaths.flatMap(basePath => {
       const normalized = normalizeBasePath(basePath);
-      return idsToTry.map(id => `${normalized}/${encodeURIComponent(id)}/report`);
+      return idsToTry.map(id => {
+        const reportPath = `${normalized}/${encodeURIComponent(id)}/report`;
+        // If the path is relative and we have an API base URL, prepend it
+        if (!isAbsoluteUrl(reportPath) && apiBaseUrl) {
+          return `${apiBaseUrl}${reportPath}`;
+        }
+        return reportPath;
+      });
     });
 
     console.info(
       '[ReportModal] report paths',
       paths,
-      configuredPaths.length || configuredPath ? '(from config)' : '(default)'
+      configuredPaths.length || configuredPath ? '(from config)' : '(default)',
+      apiBaseUrl ? `with base URL: ${apiBaseUrl}` : ''
     );
     return paths;
   };
@@ -115,9 +166,7 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
         console.info('[ReportModal] fetchReport trying path', path);
         const candidate = await fetch(path, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(),
         });
 
         if (candidate.ok) {
@@ -160,7 +209,7 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
         setResolvedReportPath(responsePath);
       }
 
-      const { parsed, isJson, rawBody } = await parseMaybeJson(response);
+      const { parsed } = await parseMaybeJson(response);
       console.log('DEBUG - Full API response:', parsed);
 
       // Extract the report from the nested structure
@@ -168,16 +217,21 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
       console.log('DEBUG - Extracted report:', report);
       console.log('DEBUG - Report type:', typeof report);
 
-      if (!isJson && typeof report === 'string' && isHtmlDocument(report)) {
-        console.warn('[ReportModal] Report response is HTML. Rendering via iframe.');
-      }
-
       // Always ensure we stringify the report to a JSON string
       const formattedJson = typeof report === 'string' ? report : JSON.stringify(report, null, 2);
       console.log('DEBUG - Formatted JSON type:', typeof formattedJson);
-      
+
       setReportData(formattedJson);
       setEditedReport(formattedJson);
+
+      // Parse data for formatted view
+      try {
+        const parsed = typeof report === 'string' ? JSON.parse(report) : report;
+        setParsedData(parsed);
+      } catch (parseErr) {
+        console.error('Failed to parse report for formatted view:', parseErr);
+        setParsedData(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch report');
       console.error('Error fetching report:', err);
@@ -192,7 +246,12 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
 
     try {
       // Validate JSON before saving
-      const parsedData = JSON.parse(editedReport);
+      let dataToSave;
+      if (parsedData) {
+        dataToSave = { report: parsedData };
+      } else {
+        dataToSave = { report: JSON.parse(editedReport) };
+      }
 
       const targetPath = resolvedReportPath || getReportPaths(studyId)[0];
       console.info('[ReportModal] handleSave using path', targetPath);
@@ -200,17 +259,21 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
       const response = await fetch(targetPath, {
         method: 'PUT',
         headers: {
+          ...getAuthHeaders(),
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(parsedData),
+        body: JSON.stringify(dataToSave),
       });
 
       if (!response.ok) {
         throw new Error(`Failed to save report: ${response.status}`);
       }
 
-      // Update the original data
-      setReportData(editedReport);
+      // Update the original data - keep parsedData as just the report, not wrapped
+      const savedJson = JSON.stringify(parsedData || JSON.parse(editedReport), null, 2);
+      setReportData(savedJson);
+      setEditedReport(savedJson);
+      // Don't change parsedData structure - it should stay as the unwrapped report
       alert('Report saved successfully!');
     } catch (err) {
       if (err instanceof SyntaxError) {
@@ -222,6 +285,160 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const updateNestedValue = (path: string[], value: string) => {
+    if (!parsedData) return;
+
+    const newData = JSON.parse(JSON.stringify(parsedData));
+    let current = newData;
+
+    for (let i = 0; i < path.length - 1; i++) {
+      current = current[path[i]];
+    }
+
+    current[path[path.length - 1]] = value;
+    setParsedData(newData);
+    setEditedReport(JSON.stringify(newData, null, 2));
+  };
+
+  const renderEditableField = (label: string, value: string, path: string[]) => (
+    <tr className="border-b border-white/5 hover:bg-white/5 transition-colors duration-200 ease-in-out">
+      <td className="py-3 px-4 text-sm font-medium text-white/80">{label}</td>
+      <td className="py-3 px-4">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => updateNestedValue(path, e.target.value)}
+          className="w-full px-3 py-2 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#48FFF6] focus:ring-1 focus:ring-[#48FFF6]"
+        />
+      </td>
+    </tr>
+  );
+
+  const renderEditableTextArea = (label: string, value: string, path: string[]) => (
+    <tr className="border-b border-white/5 hover:bg-white/5 transition-colors duration-200 ease-in-out">
+      <td className="py-3 px-4 text-sm font-medium text-white/80 align-top">{label}</td>
+      <td className="py-3 px-4">
+        <textarea
+          value={value}
+          onChange={(e) => updateNestedValue(path, e.target.value)}
+          rows={3}
+          className="w-full px-3 py-2 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm resize-none focus:outline-none focus:border-[#48FFF6] focus:ring-1 focus:ring-[#48FFF6]"
+        />
+      </td>
+    </tr>
+  );
+
+  const renderFormattedView = () => {
+    if (!parsedData) return null;
+
+    const { findings, recommendations, potential_diagnosis } = parsedData;
+
+    return (
+      <div className="space-y-6">
+        {/* Findings Section */}
+        {findings && (
+          <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
+            <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
+              <h3 className="text-lg font-semibold text-[#48FFF6]">Findings</h3>
+            </div>
+            <table className="w-full">
+              <tbody>
+                {findings.predental_space && renderEditableField('Predental Space', findings.predental_space, ['findings', 'predental_space'])}
+
+                {findings.alignment_observation && (
+                  <>
+                    <tr className="bg-white/5">
+                      <td colSpan={2} className="py-2 px-4 text-sm font-semibold text-white/90">Alignment Observation</td>
+                    </tr>
+                    {findings.alignment_observation.spinolaminar_line && renderEditableField('Spinolaminar Line', findings.alignment_observation.spinolaminar_line, ['findings', 'alignment_observation', 'spinolaminar_line'])}
+                    {findings.alignment_observation.anterior_longitudinal_line && renderEditableField('Anterior Longitudinal Line', findings.alignment_observation.anterior_longitudinal_line, ['findings', 'alignment_observation', 'anterior_longitudinal_line'])}
+                    {findings.alignment_observation.posterior_longitudinal_line && renderEditableField('Posterior Longitudinal Line', findings.alignment_observation.posterior_longitudinal_line, ['findings', 'alignment_observation', 'posterior_longitudinal_line'])}
+                  </>
+                )}
+
+                {findings.vertebrae_observation && renderEditableTextArea('Vertebrae Observation', findings.vertebrae_observation, ['findings', 'vertebrae_observation'])}
+
+                {findings.soft_tissue_line_observation && (
+                  <>
+                    <tr className="bg-white/5">
+                      <td colSpan={2} className="py-2 px-4 text-sm font-semibold text-white/90">Soft Tissue Line Observation</td>
+                    </tr>
+                    {findings.soft_tissue_line_observation.large && renderEditableField('Large', findings.soft_tissue_line_observation.large, ['findings', 'soft_tissue_line_observation', 'large'])}
+                    {findings.soft_tissue_line_observation.narrow && renderEditableField('Narrow', findings.soft_tissue_line_observation.narrow, ['findings', 'soft_tissue_line_observation', 'narrow'])}
+                  </>
+                )}
+
+                {findings.intervertebral_space_observation && (
+                  <>
+                    <tr className="bg-white/5">
+                      <td colSpan={2} className="py-2 px-4 text-sm font-semibold text-white/90">Intervertebral Space Observation</td>
+                    </tr>
+                    {findings.intervertebral_space_observation.lateral_mass_spacing && (
+                      <>
+                        <tr className="bg-white/3">
+                          <td colSpan={2} className="py-2 px-4 pl-8 text-xs font-medium text-white/70">Lateral Mass Spacing</td>
+                        </tr>
+                        {Object.entries(findings.intervertebral_space_observation.lateral_mass_spacing).map(([key, value]) =>
+                          renderEditableField(key, value as string, ['findings', 'intervertebral_space_observation', 'lateral_mass_spacing', key])
+                        )}
+                      </>
+                    )}
+                    {findings.intervertebral_space_observation.vertebral_body_spacing && (
+                      <>
+                        <tr className="bg-white/3">
+                          <td colSpan={2} className="py-2 px-4 pl-8 text-xs font-medium text-white/70">Vertebral Body Spacing</td>
+                        </tr>
+                        {Object.entries(findings.intervertebral_space_observation.vertebral_body_spacing).map(([key, value]) =>
+                          renderEditableField(key, value as string, ['findings', 'intervertebral_space_observation', 'vertebral_body_spacing', key])
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Recommendations Section */}
+        {recommendations && (
+          <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
+            <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
+              <h3 className="text-lg font-semibold text-[#48FFF6]">Recommendations</h3>
+            </div>
+            <table className="w-full">
+              <tbody>
+                {recommendations.follow_up && renderEditableTextArea('Follow Up', recommendations.follow_up, ['recommendations', 'follow_up'])}
+                {recommendations.further_imaging && renderEditableTextArea('Further Imaging', recommendations.further_imaging, ['recommendations', 'further_imaging'])}
+                {recommendations.clinical_correlation && renderEditableTextArea('Clinical Correlation', recommendations.clinical_correlation, ['recommendations', 'clinical_correlation'])}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Potential Diagnosis Section */}
+        {potential_diagnosis && (
+          <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
+            <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
+              <h3 className="text-lg font-semibold text-[#48FFF6]">Potential Diagnosis</h3>
+            </div>
+            <table className="w-full">
+              <tbody>
+                {Object.entries(potential_diagnosis).map(([key, value]) =>
+                  renderEditableTextArea(
+                    key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+                    value as string,
+                    ['potential_diagnosis', key]
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const handleClose = () => {
@@ -254,7 +471,7 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
           </div>
           <button
             onClick={handleClose}
-            className="rounded-lg p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+            className="rounded-lg p-2 text-white/60 transition-colors ease-in-out duration-200 hover:bg-white/10 hover:text-white"
           >
             <Icons.Close className="w-5 h-5" />
           </button>
@@ -278,27 +495,17 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
           ) : (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-white">Report Data (JSON)</label>
-                {editedReport !== reportData && (
-                  <span className="text-xs text-yellow-400">● Unsaved changes</span>
-                )}
+                <div className="flex items-center gap-3">
+                  <label className="text-sm font-medium text-white">AI Diagnosis Report</label>
+                  {editedReport !== reportData && (
+                    <span className="text-xs text-yellow-400">● Unsaved changes</span>
+                  )}
+                </div>
               </div>
-              {typeof editedReport === 'string' && isHtmlDocument(editedReport) ? (
-                <iframe
-                  title="Report HTML"
-                  className="w-full h-[500px] border border-white/20 rounded-lg bg-white"
-                  sandbox="allow-scripts allow-same-origin"
-                  srcDoc={editedReport}
-                />
-              ) : (
-                <textarea
-                  value={typeof editedReport === 'string' ? editedReport : JSON.stringify(editedReport, null, 2)}
-                  onChange={(e) => setEditedReport(e.target.value)}
-                  className="w-full h-[500px] p-4 bg-[#0D1B2E] border border-white/20 rounded-lg text-white font-mono text-sm resize-none focus:outline-none focus:border-[#48FFF6] focus:ring-1 focus:ring-[#48FFF6]"
-                  placeholder="Report data will appear here..."
-                  spellCheck={false}
-                />
-              )}
+
+              <div className="max-h-[500px] overflow-auto pr-2 custom-scrollbar">
+                {renderFormattedView()}
+              </div>
             </div>
           )}
         </div>
@@ -329,6 +536,23 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
           </div>
         )}
       </div>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(72, 255, 246, 0.3);
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(72, 255, 246, 0.5);
+        }
+      `}</style>
     </div>
   );
 }
