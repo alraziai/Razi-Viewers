@@ -13,6 +13,86 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resolvedReportPath, setResolvedReportPath] = useState<string | null>(null);
+
+  const parseMaybeJson = async (response: Response) => {
+    const contentType = response.headers.get('content-type') ?? '';
+    const rawBody = await response.text();
+    const trimmed = rawBody.trim();
+    const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[');
+
+    if (contentType.includes('application/json') || looksLikeJson) {
+      try {
+        return { rawBody, parsed: JSON.parse(rawBody) as unknown, isJson: true };
+      } catch (err) {
+        console.error('[ReportModal] Failed to parse JSON response', err);
+        return { rawBody, parsed: rawBody, isJson: false };
+      }
+    }
+
+    return { rawBody, parsed: rawBody, isJson: false };
+  };
+
+  const isHtmlDocument = (value: string) => {
+    const trimmed = value.trim().toLowerCase();
+    return trimmed.startsWith('<!doctype') || trimmed.startsWith('<html');
+  };
+
+  const isAbsoluteUrl = (value: string) => /^https?:\/\//i.test(value) || value.startsWith('//');
+
+  const normalizeBasePath = (value: string) => {
+    if (isAbsoluteUrl(value)) {
+      return value.replace(/\/+$/, '');
+    }
+
+    const normalized = value.startsWith('/') ? value : `/${value}`;
+    return normalized.replace(/\/+$/, '');
+  };
+
+  const splitStudyIds = (value: string) =>
+    value
+      .split(',')
+      .map(id => id.trim())
+      .filter(Boolean);
+
+  const summarizeErrorBody = (rawBody: string) => {
+    const trimmed = rawBody.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    if (isHtmlDocument(trimmed)) {
+      return ' (server returned HTML)';
+    }
+
+    const snippet = trimmed.length > 300 ? `${trimmed.slice(0, 300)}…` : trimmed;
+    return ` ${snippet}`;
+  };
+
+  const getReportPaths = (reportId: string) => {
+    const config = (window as any)?.config ?? {};
+    const configuredPath = typeof config.reportApiPath === 'string' ? config.reportApiPath : '';
+    const configuredPaths = Array.isArray(config.reportApiPaths)
+      ? config.reportApiPaths.filter((value: unknown) => typeof value === 'string')
+      : [];
+
+    const defaultPaths = ['/api/diagnosis', '/api/diagnoses', '/api/studies'];
+    const basePaths = configuredPaths.length > 0 ? configuredPaths : configuredPath ? [configuredPath] : defaultPaths;
+
+    const reportIds = splitStudyIds(reportId);
+    const idsToTry = reportIds.length > 0 ? reportIds : [reportId];
+    const paths = basePaths.flatMap(basePath => {
+      const normalized = normalizeBasePath(basePath);
+      return idsToTry.map(id => `${normalized}/${encodeURIComponent(id)}/report`);
+    });
+
+    console.info(
+      '[ReportModal] report paths',
+      paths,
+      configuredPaths.length || configuredPath ? '(from config)' : '(default)'
+    );
+    return paths;
+  };
 
   useEffect(() => {
     if (isOpen && studyId) {
@@ -25,28 +105,76 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
     setError(null);
 
     try {
-      const response = await fetch(`http://35.188.151.244/api/diagnoses/${studyId}/report`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const reportPaths = getReportPaths(studyId);
+      let response: Response | null = null;
+      let responsePath = '';
+      let sawNon404 = false;
+      let lastError: { status: number; statusText: string; body: string; path: string } | null = null;
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch report: ${response.status}`);
+      for (const path of reportPaths) {
+        console.info('[ReportModal] fetchReport trying path', path);
+        const candidate = await fetch(path, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (candidate.ok) {
+          response = candidate;
+          responsePath = path;
+          break;
+        }
+
+        const { rawBody } = await parseMaybeJson(candidate);
+        lastError = {
+          status: candidate.status,
+          statusText: candidate.statusText,
+          body: rawBody,
+          path,
+        };
+
+        if (candidate.status === 404) {
+          console.warn('[ReportModal] fetchReport 404 for path', path);
+          continue;
+        }
+
+        sawNon404 = true;
+        console.warn('[ReportModal] fetchReport non-OK for path', path, candidate.status);
       }
 
-      const data = await response.json();
-      console.log("DEBUG - Full API response:", data);
-      
+      if (!response) {
+        if (!sawNon404) {
+          throw new Error(`Failed to fetch report: 404 for ${reportPaths.join(', ')}`);
+        }
+
+        if (lastError) {
+          const bodySuffix = summarizeErrorBody(lastError.body);
+          throw new Error(`Failed to fetch report: ${lastError.status} at ${lastError.path}${bodySuffix}`);
+        }
+
+        throw new Error('Failed to fetch report');
+      }
+
+      if (responsePath) {
+        setResolvedReportPath(responsePath);
+      }
+
+      const { parsed, isJson, rawBody } = await parseMaybeJson(response);
+      console.log('DEBUG - Full API response:', parsed);
+
       // Extract the report from the nested structure
-      const report = data?.data?.report || data;
-      console.log("DEBUG - Extracted report:", report);
-      console.log("DEBUG - Report type:", typeof report);
-      
+      const report = (parsed as any)?.data?.report ?? parsed;
+      console.log('DEBUG - Extracted report:', report);
+      console.log('DEBUG - Report type:', typeof report);
+
+      if (!isJson && typeof report === 'string' && isHtmlDocument(report)) {
+        console.warn('[ReportModal] Report response is HTML. Rendering via iframe.');
+      }
+
       // Always ensure we stringify the report to a JSON string
       const formattedJson = typeof report === 'string' ? report : JSON.stringify(report, null, 2);
-      console.log("DEBUG - Formatted JSON type:", typeof formattedJson);
+      console.log('DEBUG - Formatted JSON type:', typeof formattedJson);
       
       setReportData(formattedJson);
       setEditedReport(formattedJson);
@@ -66,7 +194,10 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
       // Validate JSON before saving
       const parsedData = JSON.parse(editedReport);
 
-      const response = await fetch(`http://35.188.151.244/api/diagnoses/${studyId}/report`, {
+      const targetPath = resolvedReportPath || getReportPaths(studyId)[0];
+      console.info('[ReportModal] handleSave using path', targetPath);
+
+      const response = await fetch(targetPath, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -152,13 +283,22 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
                   <span className="text-xs text-yellow-400">● Unsaved changes</span>
                 )}
               </div>
-              <textarea
-                value={typeof editedReport === 'string' ? editedReport : JSON.stringify(editedReport, null, 2)}
-                onChange={(e) => setEditedReport(e.target.value)}
-                className="w-full h-[500px] p-4 bg-[#0D1B2E] border border-white/20 rounded-lg text-white font-mono text-sm resize-none focus:outline-none focus:border-[#48FFF6] focus:ring-1 focus:ring-[#48FFF6]"
-                placeholder="Report data will appear here..."
-                spellCheck={false}
-              />
+              {typeof editedReport === 'string' && isHtmlDocument(editedReport) ? (
+                <iframe
+                  title="Report HTML"
+                  className="w-full h-[500px] border border-white/20 rounded-lg bg-white"
+                  sandbox="allow-scripts allow-same-origin"
+                  srcDoc={editedReport}
+                />
+              ) : (
+                <textarea
+                  value={typeof editedReport === 'string' ? editedReport : JSON.stringify(editedReport, null, 2)}
+                  onChange={(e) => setEditedReport(e.target.value)}
+                  className="w-full h-[500px] p-4 bg-[#0D1B2E] border border-white/20 rounded-lg text-white font-mono text-sm resize-none focus:outline-none focus:border-[#48FFF6] focus:ring-1 focus:ring-[#48FFF6]"
+                  placeholder="Report data will appear here..."
+                  spellCheck={false}
+                />
+              )}
             </div>
           )}
         </div>
