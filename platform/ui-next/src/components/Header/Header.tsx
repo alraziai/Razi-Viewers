@@ -53,8 +53,18 @@ function Header({
 
   // Get studyId from URL query params
   const getStudyIdFromUrl = () => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('StudyInstanceUIDs') || '';
+    const search = window.location.search || '';
+    const hash = window.location.hash || '';
+    const queryFromHash = hash.includes('?') ? hash.slice(hash.indexOf('?')) : '';
+    const query = search.length > 1 ? search : queryFromHash;
+    const params = new URLSearchParams(query);
+    return (
+      params.get('studyId') ||
+      params.get('study_id') ||
+      params.get('StudyInstanceUIDs') ||
+      params.get('studyInstanceUIDs') ||
+      ''
+    );
   };
 
   // Get user initials

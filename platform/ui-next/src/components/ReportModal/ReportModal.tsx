@@ -15,6 +15,29 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [resolvedReportPath, setResolvedReportPath] = useState<string | null>(null);
 
+  const parseMaybeJson = async (response: Response) => {
+    const contentType = response.headers.get('content-type') ?? '';
+    const rawBody = await response.text();
+    const trimmed = rawBody.trim();
+    const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[');
+
+    if (contentType.includes('application/json') || looksLikeJson) {
+      try {
+        return { rawBody, parsed: JSON.parse(rawBody) as unknown, isJson: true };
+      } catch (err) {
+        console.error('[ReportModal] Failed to parse JSON response', err);
+        return { rawBody, parsed: rawBody, isJson: false };
+      }
+    }
+
+    return { rawBody, parsed: rawBody, isJson: false };
+  };
+
+  const isHtmlDocument = (value: string) => {
+    const trimmed = value.trim().toLowerCase();
+    return trimmed.startsWith('<!doctype') || trimmed.startsWith('<html');
+  };
+
   const getReportPaths = (reportId: string) => {
     const config = (window as any)?.config ?? {};
     const configuredPath = typeof config.reportApiPath === 'string' ? config.reportApiPath : '';
@@ -89,17 +112,23 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
         setResolvedReportPath(responsePath);
       }
 
-      const data = await response.json();
-      console.log("DEBUG - Full API response:", data);
-      
+      const { parsed, isJson, rawBody } = await parseMaybeJson(response);
+      console.log('DEBUG - Full API response:', parsed);
+
       // Extract the report from the nested structure
-      const report = data?.data?.report || data;
-      console.log("DEBUG - Extracted report:", report);
-      console.log("DEBUG - Report type:", typeof report);
-      
+      const report = (parsed as any)?.data?.report ?? parsed;
+      console.log('DEBUG - Extracted report:', report);
+      console.log('DEBUG - Report type:', typeof report);
+
+      if (!isJson && typeof report === 'string' && isHtmlDocument(report)) {
+        setError('Report API returned HTML instead of JSON. Check endpoint/proxy.');
+        console.error('[ReportModal] Report response is HTML:', rawBody.slice(0, 200));
+        return;
+      }
+
       // Always ensure we stringify the report to a JSON string
       const formattedJson = typeof report === 'string' ? report : JSON.stringify(report, null, 2);
-      console.log("DEBUG - Formatted JSON type:", typeof formattedJson);
+      console.log('DEBUG - Formatted JSON type:', typeof formattedJson);
       
       setReportData(formattedJson);
       setEditedReport(formattedJson);
