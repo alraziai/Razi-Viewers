@@ -38,6 +38,37 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
     return trimmed.startsWith('<!doctype') || trimmed.startsWith('<html');
   };
 
+  const isAbsoluteUrl = (value: string) => /^https?:\/\//i.test(value) || value.startsWith('//');
+
+  const normalizeBasePath = (value: string) => {
+    if (isAbsoluteUrl(value)) {
+      return value.replace(/\/+$/, '');
+    }
+
+    const normalized = value.startsWith('/') ? value : `/${value}`;
+    return normalized.replace(/\/+$/, '');
+  };
+
+  const splitStudyIds = (value: string) =>
+    value
+      .split(',')
+      .map(id => id.trim())
+      .filter(Boolean);
+
+  const summarizeErrorBody = (rawBody: string) => {
+    const trimmed = rawBody.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    if (isHtmlDocument(trimmed)) {
+      return ' (server returned HTML)';
+    }
+
+    const snippet = trimmed.length > 300 ? `${trimmed.slice(0, 300)}…` : trimmed;
+    return ` ${snippet}`;
+  };
+
   const getReportPaths = (reportId: string) => {
     const config = (window as any)?.config ?? {};
     const configuredPath = typeof config.reportApiPath === 'string' ? config.reportApiPath : '';
@@ -48,9 +79,11 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
     const defaultPaths = ['/api/diagnosis', '/api/diagnoses', '/api/studies'];
     const basePaths = configuredPaths.length > 0 ? configuredPaths : configuredPath ? [configuredPath] : defaultPaths;
 
-    const paths = basePaths.map(basePath => {
-      const normalized = basePath.startsWith('/') ? basePath : `/${basePath}`;
-      return `${normalized}/${encodeURIComponent(reportId)}/report`;
+    const reportIds = splitStudyIds(reportId);
+    const idsToTry = reportIds.length > 0 ? reportIds : [reportId];
+    const paths = basePaths.flatMap(basePath => {
+      const normalized = normalizeBasePath(basePath);
+      return idsToTry.map(id => `${normalized}/${encodeURIComponent(id)}/report`);
     });
 
     console.info(
@@ -75,6 +108,8 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
       const reportPaths = getReportPaths(studyId);
       let response: Response | null = null;
       let responsePath = '';
+      let sawNon404 = false;
+      let lastError: { status: number; statusText: string; body: string; path: string } | null = null;
 
       for (const path of reportPaths) {
         console.info('[ReportModal] fetchReport trying path', path);
@@ -91,21 +126,34 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
           break;
         }
 
-        if (candidate.status !== 404) {
-          response = candidate;
-          responsePath = path;
-          break;
+        const { rawBody } = await parseMaybeJson(candidate);
+        lastError = {
+          status: candidate.status,
+          statusText: candidate.statusText,
+          body: rawBody,
+          path,
+        };
+
+        if (candidate.status === 404) {
+          console.warn('[ReportModal] fetchReport 404 for path', path);
+          continue;
         }
 
-        console.warn('[ReportModal] fetchReport 404 for path', path);
+        sawNon404 = true;
+        console.warn('[ReportModal] fetchReport non-OK for path', path, candidate.status);
       }
 
       if (!response) {
-        throw new Error(`Failed to fetch report: 404 for ${reportPaths.join(', ')}`);
-      }
+        if (!sawNon404) {
+          throw new Error(`Failed to fetch report: 404 for ${reportPaths.join(', ')}`);
+        }
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch report: ${response.status}`);
+        if (lastError) {
+          const bodySuffix = summarizeErrorBody(lastError.body);
+          throw new Error(`Failed to fetch report: ${lastError.status} at ${lastError.path}${bodySuffix}`);
+        }
+
+        throw new Error('Failed to fetch report');
       }
 
       if (responsePath) {

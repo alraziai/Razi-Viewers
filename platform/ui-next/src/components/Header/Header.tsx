@@ -58,13 +58,10 @@ function Header({
     const queryFromHash = hash.includes('?') ? hash.slice(hash.indexOf('?')) : '';
     const query = search.length > 1 ? search : queryFromHash;
     const params = new URLSearchParams(query);
-    return (
-      params.get('studyId') ||
-      params.get('study_id') ||
-      params.get('StudyInstanceUIDs') ||
-      params.get('studyInstanceUIDs') ||
-      ''
-    );
+    const studyInstanceUIDs = params.get('StudyInstanceUIDs') ||
+      '';
+
+    return studyInstanceUIDs || '';
   };
 
   // Get user initials
