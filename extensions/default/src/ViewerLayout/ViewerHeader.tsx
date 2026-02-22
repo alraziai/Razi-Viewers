@@ -31,7 +31,7 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
     preserveQueryParameters(searchQuery);
 
     navigate({
-      pathname: '/',
+      pathname: '/dashboard',
       search: decodeURIComponent(searchQuery.toString()),
     });
   };
@@ -84,7 +84,8 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
   return (
     <Header
       menuOptions={menuOptions}
-      isReturnEnabled={!!appConfig.showStudyList}
+      // isReturnEnabled={!!appConfig.showStudyList}
+      isReturnEnabled={false}
       onClickReturnButton={onClickReturnButton}
       WhiteLabeling={appConfig.whiteLabeling}
       Secondary={<Toolbar buttonSection="secondary" />}

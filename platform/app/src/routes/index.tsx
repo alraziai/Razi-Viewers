@@ -1,13 +1,16 @@
 import React from 'react';
-import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from '@ohif/ui-next';
 
 // Route Components
 import DataSourceWrapper from './DataSourceWrapper';
 import WorkList from './WorkList';
+import Dashboard from './Dashboard';
 import Local from './Local';
 import Debug from './Debug';
 import NotFound from './NotFound';
+import Login from './Login/Login';
+import AuthInitializer from './AuthInitializer';
 import buildModeRoutes from './buildModeRoutes';
 import PrivateRoute from './PrivateRoute';
 import PropTypes from 'prop-types';
@@ -38,12 +41,17 @@ const NotFoundStudy = () => {
   return (
     <div className="absolute flex h-full w-full items-center justify-center text-white">
       <div>
-        <h4>
-          One or more of the requested studies are not available at this time.
-        </h4>
+        <h4>One or more of the requested studies are not available at this time.</h4>
         {showStudyList && (
           <p className="mt-2">
-            Return to the <Link className="text-primary-light" to="/">study list</Link> to select a different study to view.
+            Return to the{' '}
+            <Link
+              className="text-primary-light"
+              to="/"
+            >
+              study list
+            </Link>{' '}
+            to select a different study to view.
           </p>
         )}
       </div>
@@ -111,10 +119,24 @@ const createRoutes = ({
   console.log('Registering worklist route', routerBasename, path);
 
   const WorkListRoute = {
-    path: '/',
+    path: '/worklist',
     children: DataSourceWrapper,
     private: true,
     props: { children: WorkList, servicesManager, extensionManager },
+  };
+
+  const DashboardRoute = {
+    path: '/dashboard',
+    children: DataSourceWrapper,
+    private: true,
+    props: { children: Dashboard, servicesManager, extensionManager },
+  };
+
+  const LoginRoute = {
+    path: '/login',
+    children: Login,
+    private: false,
+    props: { servicesManager },
   };
 
   const customRoutes = customizationService.getCustomization('routes.customRoutes');
@@ -122,6 +144,8 @@ const createRoutes = ({
   const allRoutes = [
     ...routes,
     ...(showStudyList ? [WorkListRoute] : []),
+    DashboardRoute,
+    LoginRoute,
     ...(customRoutes?.routes || []),
     ...bakedInRoutes,
     customRoutes?.notFoundRoute || notFoundRoute,
@@ -157,29 +181,47 @@ const createRoutes = ({
   // to check if it is enabled or not
   // Todo: I think we can remove the second public return below
   return (
-    <Routes>
-      {allRoutes.map((route, i) => {
-        return route.private === true ? (
-          <Route
-            key={i}
-            path={route.path}
-            element={
-              <PrivateRoute
-                handleUnauthenticated={() => userAuthenticationService.handleUnauthenticated()}
-              >
-                <RouteWithErrorBoundary route={route} />
-              </PrivateRoute>
-            }
-          ></Route>
-        ) : (
-          <Route
-            key={i}
-            path={route.path}
-            element={<RouteWithErrorBoundary route={route} />}
-          />
-        );
-      })}
-    </Routes>
+    <>
+      <AuthInitializer servicesManager={servicesManager} />
+      <Routes>
+        {/* Redirect root path to dashboard */}
+        <Route
+          path="/"
+          element={
+            <Navigate
+              to="/dashboard"
+              replace
+            />
+          }
+        />
+        {/* Login route - public */}
+        <Route
+          path="/login"
+          element={<Login servicesManager={servicesManager} />}
+        />
+        {allRoutes.map((route, i) => {
+          return route.private === true ? (
+            <Route
+              key={i}
+              path={route.path}
+              element={
+                <PrivateRoute
+                  handleUnauthenticated={() => userAuthenticationService.handleUnauthenticated()}
+                >
+                  <RouteWithErrorBoundary route={route} />
+                </PrivateRoute>
+              }
+            ></Route>
+          ) : (
+            <Route
+              key={i}
+              path={route.path}
+              element={<RouteWithErrorBoundary route={route} />}
+            />
+          );
+        })}
+      </Routes>
+    </>
   );
 };
 

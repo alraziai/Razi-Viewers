@@ -96,6 +96,8 @@ import { Toaster, toast } from './Sonner';
 import { StudySummary } from './StudySummary';
 import { ErrorBoundary } from './Errorboundary';
 import { Header } from './Header';
+import { ReportModal } from './ReportModal';
+import { SideNavBar } from './SideNavBar';
 import { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './Card';
 import {
   ViewportActionButton,
@@ -229,6 +231,8 @@ export {
   SegmentationTable,
   StudySummary,
   Header,
+  ReportModal,
+  SideNavBar,
   Card,
   CardHeader,
   CardFooter,

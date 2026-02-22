@@ -62,8 +62,8 @@ const Thumbnail = ({
     return (
       <div
         className={classnames(
-          'flex h-full w-full flex-col items-center justify-center gap-[2px] p-[4px]',
-          isActive && 'bg-popover rounded'
+          'flex h-full w-full flex-col items-center justify-center gap-[2px] bg-black p-[4px]',
+          isActive && 'bg-[#083A4A] rounded border border-[#48FFF6]/50'
         )}
       >
         <div className="h-[114px] w-[128px]">
@@ -84,8 +84,8 @@ const Thumbnail = ({
               <div
                 className={classnames(
                   'h-[10px] w-[10px] rounded-[2px]',
-                  isActive || isHydratedForDerivedDisplaySet ? 'bg-highlight' : 'bg-primary/65',
-                  loadingProgress && loadingProgress < 1 && 'bg-primary/25'
+                  isActive || isHydratedForDerivedDisplaySet ? 'bg-gradient-to-br from-[#2E86D5] to-[#48FFF6]' : 'bg-[#48FFF6]/65',
+                  loadingProgress && loadingProgress < 1 && 'bg-[#48FFF6]/25'
                 )}
               ></div>
               <div className="text-[11px] font-semibold text-white">{modality}</div>
@@ -101,9 +101,9 @@ const Thumbnail = ({
                 <Tooltip>
                   <TooltipTrigger>
                     <div className="group">
-                      <Icons.StatusTracking className="text-primary-light h-[15px] w-[15px] group-hover:hidden" />
+                      <Icons.StatusTracking className="text-[#48FFF6] h-[15px] w-[15px] group-hover:hidden" />
                       <Icons.Cancel
-                        className="text-primary-light hidden h-[15px] w-[15px] group-hover:block"
+                        className="text-[#48FFF6] hidden h-[15px] w-[15px] group-hover:block"
                         onClick={onClickUntrack}
                       />
                     </div>
@@ -111,7 +111,7 @@ const Thumbnail = ({
                   <TooltipContent side="right">
                     <div className="flex flex-1 flex-row">
                       <div className="flex-2 flex items-center justify-center pr-4">
-                        <Icons.InfoLink className="text-primary" />
+                        <Icons.InfoLink className="text-[#48FFF6]" />
                       </div>
                       <div className="flex flex-1 flex-col">
                         <span>
@@ -145,8 +145,8 @@ const Thumbnail = ({
             </TooltipTrigger>
           </Tooltip>
           <div className="flex h-[12px] items-center gap-[7px] overflow-hidden">
-            <div className="text-muted-foreground pl-1 text-[11px]"> S:{seriesNumber}</div>
-            <div className="text-muted-foreground text-[11px]">
+              <div className="text-[#B0B0B0] pl-1 text-[11px]"> S:{seriesNumber}</div>
+              <div className="text-[#B0B0B0] text-[11px]">
               <div className="flex items-center gap-[4px]">
                 {countIcon ? (
                   React.createElement(Icons[countIcon] || Icons.MissingIcon, { className: 'w-3' })
@@ -167,15 +167,15 @@ const Thumbnail = ({
       <div
         className={classnames(
           'flex h-full w-full items-center justify-between pr-[8px] pl-[8px] pt-[4px] pb-[4px]',
-          isActive && 'bg-popover rounded'
+          isActive && 'bg-[#083A4A] rounded border border-[#48FFF6]/50'
         )}
       >
         <div className="relative flex h-[32px] w-full items-center gap-[8px] overflow-hidden">
           <div
             className={classnames(
               'h-[32px] w-[4px] min-w-[4px] rounded',
-              isActive || isHydratedForDerivedDisplaySet ? 'bg-highlight' : 'bg-primary/65',
-              loadingProgress && loadingProgress < 1 && 'bg-primary/25'
+              isActive || isHydratedForDerivedDisplaySet ? 'bg-gradient-to-b from-[#2E86D5] to-[#48FFF6]' : 'bg-[#48FFF6]/65',
+              loadingProgress && loadingProgress < 1 && 'bg-[#48FFF6]/25'
             )}
           ></div>
           <div className="flex h-full w-[calc(100%-12px)] flex-col justify-start">
@@ -192,8 +192,8 @@ const Thumbnail = ({
             </div>
 
             <div className="flex h-[12px] items-center gap-[7px] overflow-hidden">
-              <div className="text-muted-foreground text-[12px]"> S:{seriesNumber}</div>
-              <div className="text-muted-foreground text-[12px]">
+              <div className="text-[#B0B0B0] text-[12px]"> S:{seriesNumber}</div>
+              <div className="text-[#B0B0B0] text-[12px]">
                 <div className="flex items-center gap-[4px]">
                   {' '}
                   {countIcon ? (

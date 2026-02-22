@@ -56,6 +56,8 @@ module.exports = (env, argv) => {
   const isProdBuild = process.env.NODE_ENV === 'production';
   const hasProxy = PROXY_TARGET && PROXY_DOMAIN;
 
+  // Merge aliases properly - webpack-merge should handle this, but ensure it works
+  const baseAliases = baseConfig.resolve?.alias || {};
   const mergedConfig = merge(baseConfig, {
     entry: {
       app: ENTRY_TARGET,
@@ -73,11 +75,17 @@ module.exports = (env, argv) => {
       },
     },
     resolve: {
+      alias: {
+        ...baseAliases,
+        '@ohif/extension-ai-overlays': path.resolve(__dirname, '../../../extensions/ai-overlays/src'),
+      },
       modules: [
         // Modules specific to this package
         path.resolve(__dirname, '../node_modules'),
         // Hoisted Yarn Workspace Modules
         path.resolve(__dirname, '../../../node_modules'),
+        // Extensions directory for local extensions
+        path.resolve(__dirname, '../../../extensions'),
         SRC_DIR,
       ],
     },
@@ -167,6 +175,10 @@ module.exports = (env, argv) => {
             setHeaders,
           },
           publicPath: '/viewer-testdata',
+        },
+        {
+          directory: PUBLIC_DIR,
+          publicPath: '/',
         },
       ],
       //public: 'http://localhost:' + 3000,

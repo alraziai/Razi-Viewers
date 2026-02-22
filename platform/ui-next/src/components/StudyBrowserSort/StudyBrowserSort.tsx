@@ -55,13 +55,13 @@ export function StudyBrowserSort({ servicesManager }: withAppTypes) {
       <DropdownMenu>
         <Tooltip>
           <TooltipTrigger className="w-full overflow-hidden">
-            <DropdownMenuTrigger className="border-inputfield-main focus:border-inputfield-main flex h-[26px] w-full items-center justify-start overflow-hidden whitespace-nowrap rounded border bg-black p-2 text-base text-white">
+            <DropdownMenuTrigger className="border-[#FFFFFF1A] focus:border-[#48FFF6] flex h-[26px] w-full items-center justify-start overflow-hidden whitespace-nowrap rounded border bg-[#0A1628] p-2 text-base text-white hover:bg-[#083A4A] transition-colors">
               {selectedSort.label}
             </DropdownMenuTrigger>
           </TooltipTrigger>
           <TooltipContent>{selectedSort.label}</TooltipContent>
         </Tooltip>
-        <DropdownMenuContent className="bg-black">
+        <DropdownMenuContent className="bg-[#0A1628] border border-[#FFFFFF1A]">
           {sortFunctions.map(sort => (
             <DropdownMenuItem
               key={sort.label}
@@ -77,12 +77,12 @@ export function StudyBrowserSort({ servicesManager }: withAppTypes) {
         <TooltipTrigger>
           <button
             onClick={toggleSortDirection}
-            className="flex h-[26px] items-center justify-center bg-black"
+            className="flex h-[26px] items-center justify-center bg-[#0A1628] hover:bg-[#083A4A] transition-colors rounded border border-[#FFFFFF1A]"
           >
             {sortDirection === 'ascending' ? (
-              <Icons.SortingAscending className="text-primary-main w-2" />
+              <Icons.SortingAscending className="text-[#48FFF6] w-2" />
             ) : (
-              <Icons.SortingDescending className="text-primary-main w-2" />
+              <Icons.SortingDescending className="text-[#48FFF6] w-2" />
             )}
           </button>
         </TooltipTrigger>

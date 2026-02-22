@@ -31,6 +31,10 @@ export const cornerstone = {
   viewport: '@ohif/extension-cornerstone.viewportModule.cornerstone',
 };
 
+export const aiOverlays = {
+  panel: '@ohif/extension-ai-overlays.panelModule.ai-overlays-panel',
+};
+
 export const dicomsr = {
   sopClassHandler: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr',
   sopClassHandler3D: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr-3d',
@@ -199,6 +203,7 @@ export function onModeExit({ servicesManager }: withAppTypes) {
 }
 
 export const toolbarSections = {
+  //TODO: Add back in the toolbar buttons
   [TOOLBAR_SECTIONS.primary]: [
     'MeasurementTools',
     'Zoom',
@@ -211,7 +216,11 @@ export const toolbarSections = {
     'MoreTools',
   ],
 
-  [TOOLBAR_SECTIONS.viewportActionMenu.topLeft]: ['orientationMenu', 'dataOverlayMenu'],
+  [TOOLBAR_SECTIONS.viewportActionMenu.topLeft]: [
+    'orientationMenu',
+    'dataOverlayMenu',
+    'aiOverlaysMenu',
+  ],
 
   [TOOLBAR_SECTIONS.viewportActionMenu.bottomMiddle]: ['AdvancedRenderingControls'],
 
@@ -271,9 +280,14 @@ export const basicLayout = {
   props: {
     leftPanels: [ohif.thumbnailList],
     leftPanelResizable: true,
-    rightPanels: [cornerstone.segmentation, cornerstone.measurements],
-    rightPanelClosed: true,
+    rightPanels: [
+      '@ohif/extension-ai-overlays.panelModule.ai-overlays-panel',
+      cornerstone.segmentation,
+      cornerstone.measurements,
+    ],
+    rightPanelClosed: false,
     rightPanelResizable: true,
+    rightPanelDefaultWidth: 800,
     viewports: [
       {
         namespace: cornerstone.viewport,
@@ -308,7 +322,7 @@ export const basicLayout = {
 };
 
 export function layoutTemplate() {
-  return structuredCloneWithFunctions(this.layoutInstance);
+  return structuredCloneWithFunctions(basicLayout);
 }
 
 export const basicRoute = {

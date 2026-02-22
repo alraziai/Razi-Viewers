@@ -10,8 +10,10 @@ import {
   ToolButton,
 } from '../';
 import { IconPresentationProvider } from '@ohif/ui-next';
+import { useUserAuthentication } from '../../contextProviders';
 
 import NavBar from '../NavBar';
+import ReportModal from '../ReportModal';
 
 // Todo: we should move this component to composition and remove props base
 
@@ -36,7 +38,7 @@ interface HeaderProps {
 function Header({
   children,
   menuOptions,
-  isReturnEnabled = true,
+  isReturnEnabled = false,
   onClickReturnButton,
   isSticky = false,
   WhiteLabeling,
@@ -45,11 +47,66 @@ function Header({
   Secondary,
   ...props
 }: HeaderProps): ReactNode {
+  const [authState] = useUserAuthentication();
+  const user = authState?.user;
+  const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
+
+  // Get studyId from URL query params
+  const getStudyIdFromUrl = () => {
+    const search = window.location.search || '';
+    const hash = window.location.hash || '';
+    const queryFromHash = hash.includes('?') ? hash.slice(hash.indexOf('?')) : '';
+    const query = search.length > 1 ? search : queryFromHash;
+    const params = new URLSearchParams(query);
+    const studyInstanceUIDs = params.get('StudyInstanceUIDs') ||
+      '';
+
+    return studyInstanceUIDs || '';
+  };
+
+  // Get user initials
+  const getUserInitials = () => {
+    if (!user) return 'DR';
+
+    if (user.firstName && user.lastName) {
+      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    }
+
+    if (user.name) {
+      const parts = user.name.split(' ');
+      if (parts.length >= 2) {
+        return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      }
+      return user.name.substring(0, 2).toUpperCase();
+    }
+
+    if (user.email) {
+      return user.email.substring(0, 2).toUpperCase();
+    }
+
+    return 'DR';
+  };
+
+  // Get user display name
+  const getUserDisplayName = () => {
+    if (!user) return 'Dr. Sarah Chen';
+    return user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Doctor';
+  };
+
   const onClickReturn = () => {
     if (isReturnEnabled && onClickReturnButton) {
       onClickReturnButton();
     }
   };
+
+  const handleGenerateReport = () => {
+    const studyId = getStudyIdFromUrl();
+    if (studyId) {
+      setIsReportModalOpen(true);
+    } else {
+      alert('No study ID found in URL');
+    }
+  }
 
   return (
     <IconPresentationProvider
@@ -60,8 +117,8 @@ function Header({
         isSticky={isSticky}
         {...props}
       >
-        <div className="relative h-[48px] items-center">
-          <div className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center">
+        <div className="relative h-[100px] items-center">
+          <div className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center px-4">
             <div
               className={classNames(
                 'mr-3 inline-flex items-center',
@@ -72,7 +129,16 @@ function Header({
             >
               {isReturnEnabled && <Icons.ArrowLeft className="text-primary ml-1 h-7 w-7" />}
               <div className="ml-1">
-                {WhiteLabeling?.createLogoComponentFn?.(React, props) || <Icons.OHIFLogo />}
+                {WhiteLabeling?.createLogoComponentFn?.(React, props) || (
+                  <div className="flex flex-col items-start gap-2">
+                    <div className="flex flex-row items-center gap-4">
+                      <Icons.RAZILogo />
+                      <Icons.RAZILogoText />
+                    </div>
+                    <Icons.RAZIRadiologyText />
+                  </div>
+                )}
+                {/* {WhiteLabeling?.createLogoComponentFn?.(React, props) || <Icons.RAZILogoText />} */}
               </div>
             </div>
           </div>
@@ -84,16 +150,42 @@ function Header({
             {UndoRedo}
             <div className="border-primary-dark mx-1.5 h-[25px] border-r"></div>
             {PatientInfo}
-            <div className="border-primary-dark mx-1.5 h-[25px] border-r"></div>
+            <div className="border-primary-dark mx-1.5 h-[25px] border-r hidden"></div>
             <div className="flex-shrink-0">
+              <button
+                className="text-[#0D0FAF] h-full w-full gap-4 rounded-3xl py-4 px-14 bg-linear-to-b from-[#2E86D5] to-[#48FFF6] text-[12px] font-medium"
+                style={{
+                  background: 'linear-gradient(180deg, #2E86D5, #48FFF6)',
+                }}
+                onClick={handleGenerateReport}
+              >
+                Generate Report
+              </button>
+            </div>
+            <div className="flex-shrink-0 hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="text-primary hover:bg-primary-dark mt-2 h-full w-full"
+                    // size="icon"
+                    className="text-primary mt-2 h-full w-full gap-4 rounded-2xl border-2 border-[#FFFFFF1A] bg-[#FFFFFF0D] p-4"
                   >
-                    <Icons.GearSettings />
+                    <div
+                      className="flex h-[32px] w-[32px] items-center justify-center rounded-full text-[12px] font-medium text-white"
+                      style={{
+                        background: 'linear-gradient(180deg, #2E86D5, #48FFF6)',
+                      }}
+                    >
+                      {getUserInitials()}
+                    </div>
+                    <div className="flex flex-col items-start gap-1 text-white">
+                      <div className="text-[12px] font-medium">{getUserDisplayName()}</div>
+                      <div className="text-[10px] font-regular text-[#FFFFFF80]">Radiolgist</div>
+                    </div>
+                    <div className="flex w-5 items-center justify-center">
+                      <Icons.RaziArrowDown />
+                    </div>
+                    {/* <Icons.GearSettings /> */}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -122,6 +214,11 @@ function Header({
           </div>
         </div>
       </NavBar>
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        studyId={getStudyIdFromUrl()}
+      />
     </IconPresentationProvider>
   );
 }

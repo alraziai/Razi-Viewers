@@ -4,7 +4,7 @@ window.config = {
   name: 'config/default.js',
   routerBasename: null,
   // whiteLabeling: {},
-  extensions: [],
+  extensions: ['@ohif/extension-ai-overlays'],
   modes: [],
   customizationService: {},
   showStudyList: true,
@@ -26,6 +26,9 @@ window.config = {
     prefetch: 25,
   },
   showErrorDetails: 'always', // 'always', 'dev', 'production'
+  // Report API configuration
+  reportApiBaseUrl: 'http://35.188.151.244',
+  reportApiPath: '/api/diagnosis',
   // filterQueryParam: false,
   // Defines multi-monitor layouts
   multimonitor: [

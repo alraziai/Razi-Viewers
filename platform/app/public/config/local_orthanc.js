@@ -1,7 +1,7 @@
 /** @type {AppTypes.Config} */
 window.config = {
   routerBasename: null,
-  extensions: [],
+  extensions: ['@ohif/extension-ai-overlays'],
   modes: [],
   showStudyList: true,
   maxNumberOfWebWorkers: 3,
@@ -10,6 +10,9 @@ window.config = {
   showCPUFallbackMessage: true,
   strictZSpacingForVolumeViewport: true,
   // filterQueryParam: false,
+  // Report API configuration
+  reportApiBaseUrl: 'http://35.188.151.244',
+  reportApiPath: '/api/diagnosis',
   defaultDataSourceName: 'orthanc',
   dataSources: [
     {
@@ -18,9 +21,9 @@ window.config = {
       configuration: {
         friendlyName: 'local Orthanc DICOMWeb Server',
         name: 'DCM4CHEE',
-        wadoUriRoot: 'http://localhost/dicom-web',
-        qidoRoot: 'http://localhost/dicom-web',
-        wadoRoot: 'http://localhost/dicom-web',
+        wadoUriRoot: 'http://35.188.151.244/orthanc/dicom-web',
+        qidoRoot: 'http://35.188.151.244/orthanc/dicom-web',
+        wadoRoot: 'http://35.188.151.244/orthanc/dicom-web',
         qidoSupportsIncludeField: true,
         supportsReject: true,
         dicomUploadEnabled: true,
