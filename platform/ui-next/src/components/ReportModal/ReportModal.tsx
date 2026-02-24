@@ -56,7 +56,7 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
 
     // Fallback: Try sessionStorage (from postMessage)
     if (!token) {
-      token = sessionStorage.getItem('ohif_auth_token');
+      token = sessionStorage.getItem('auth_token');
       console.log('[ReportModal] Token from sessionStorage:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
     }
 

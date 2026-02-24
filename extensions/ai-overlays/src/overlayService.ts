@@ -232,15 +232,7 @@ export function createOverlayService(servicesManager: ServicesManager) {
     try {
       // Fetch and load the overlay image with Authorization header from cookies
       console.log(`[Overlay Service] Fetching overlay image: ${layer.file}`);
-      function getCookie(name: string): string | null {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) {
-          return parts.pop()?.split(';').shift() || null;
-        }
-        return null;
-      }
-      const token = getCookie('auth_token');
+      const token = sessionStorage.getItem('auth_token');
       const headers: Record<string, string> = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
