@@ -1,6 +1,7 @@
 const ALGORITHM = "AES-CBC";
 const IV_LENGTH = 16;
-const KEY_HEX = process.env.VITE_ENCRYPTION_KEY;
+const config = (window as any)?.config ?? {};
+const KEY_HEX = config.encryptionKey ?? process.env.VITE_ENCRYPTION_KEY;
 
 function hexToBytes(hex: string): ArrayBuffer {
 	if (!hex) return new ArrayBuffer(0);

@@ -13,6 +13,7 @@ window.config = {
   // Report API configuration
   reportApiBaseUrl: 'https://api.alrazi.ai',
   reportApiPath: '/api/diagnosis',
+  encryptionKey: "9QFdm6EwqPoTSbLopMyInmAzxx4LaKR/baHuAciO7PY=",
   defaultDataSourceName: 'orthanc',
   dataSources: [
     {
