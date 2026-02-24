@@ -10,7 +10,7 @@
 import type { ServicesManager } from "@ohif/core";
 import { createOverlayService } from "./overlayService";
 import { diagnosisStore } from "./diagnosisStore";
-import { decrypt } from "platform/ui-next/src/lib/crypto";
+import { decrypt } from "../../../platform/ui-next/src/lib/crypto";
 
 type DiagnosisMessage = {
   type: string;
