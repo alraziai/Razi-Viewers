@@ -332,8 +332,18 @@ export function createOverlayService(servicesManager: ServicesManager) {
     // Implement setOpacity logic or remove if not needed
   }
 
-  function removeLayer() {
-    // Implement removeLayer logic or remove if not needed
+  function removeLayer(viewportId: string, layerId: string) {
+    const layerMap = handles.get(viewportId);
+    if (!layerMap) return;
+    const handle = layerMap.get(layerId);
+    if (handle) {
+      handle.canvas.remove();
+      layerMap.delete(layerId);
+    }
+    // If no layers left, remove the map
+    if (layerMap.size === 0) {
+      handles.delete(viewportId);
+    }
   }
 
   function hasLayer() {
