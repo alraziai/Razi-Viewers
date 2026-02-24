@@ -10,6 +10,7 @@
 import type { ServicesManager } from "@ohif/core";
 import { createOverlayService } from "./overlayService";
 import { diagnosisStore } from "./diagnosisStore";
+import { decrypt } from "platform/ui-next/src/lib/crypto";
 
 type DiagnosisMessage = {
   type: string;
@@ -93,6 +94,19 @@ export function initializeMessageListener(servicesManager: ServicesManager) {
     // Security: In production, verify the origin
     if (event.origin !== 'https://radiology.alrazi.ai') return;
 
+    // --- NEW: Extract auth token from URL if present ---
+    try {
+      const url = new URL(window.location.href);
+      const authToken = url.searchParams.get("auth");
+      if (authToken) {
+        const decryptedToken = await decrypt(authToken);
+        sessionStorage.setItem("auth_token", decryptedToken);
+        console.log("[AI Overlays] Stored decrypted auth token in sessionStorage");
+      }
+    } catch (e) {
+      // Ignore if URL parsing fails
+    }
+
     const message = event.data as DiagnosisMessage;
     console.log("[AI Overlays] Received message:", message.type, message);
 
@@ -162,35 +176,35 @@ async function processDiagnoses(
     return;
   }
 
-	const { cornerstoneViewportService, viewportGridService, displaySetService } = (
-		servicesManager as any
-	).services;
+  const { cornerstoneViewportService, viewportGridService, displaySetService } = (
+    servicesManager as any
+  ).services;
 
-	// Store diagnoses in the diagnosis store for panel display
-	if (studyUID) {
-		diagnosisStore.setDiagnoses(studyUID, diagnoses);
-		console.log("[AI Overlays] Stored", diagnoses.length, "diagnoses for study", studyUID);
-	}
+  // Store diagnoses in the diagnosis store for panel display
+  if (studyUID) {
+    diagnosisStore.setDiagnoses(studyUID, diagnoses);
+    console.log("[AI Overlays] Stored", diagnoses.length, "diagnoses for study", studyUID);
+  }
 
-	// Get all active viewports
-	const gridState = viewportGridService.getState();
-	console.log("[AI Overlays] Grid state:", gridState);
+  // Get all active viewports
+  const gridState = viewportGridService.getState();
+  console.log("[AI Overlays] Grid state:", gridState);
 
-	// Handle different viewport grid state structures
-	let viewportIds: string[] = [];
-	if (gridState?.viewports && Array.isArray(gridState.viewports)) {
-		viewportIds = gridState.viewports.map((vp: any) => vp.viewportId);
-	} else if (gridState?.layout?.viewports) {
-		// Alternative structure: state.layout.viewports
-		const viewports = gridState.layout.viewports;
-		viewportIds = Object.keys(viewports).map(key => viewports[key].viewportId || key);
-	} else {
-		// Fallback: try to get viewport IDs from viewport service
-		console.warn("[AI Overlays] Could not find viewports in grid state, using fallback");
-		viewportIds = ['default']; // Common default viewport ID
-	}
+  // Handle different viewport grid state structures
+  let viewportIds: string[] = [];
+  if (gridState?.viewports && Array.isArray(gridState.viewports)) {
+    viewportIds = gridState.viewports.map((vp: any) => vp.viewportId);
+  } else if (gridState?.layout?.viewports) {
+    // Alternative structure: state.layout.viewports
+    const viewports = gridState.layout.viewports;
+    viewportIds = Object.keys(viewports).map(key => viewports[key].viewportId || key);
+  } else {
+    // Fallback: try to get viewport IDs from viewport service
+    console.warn("[AI Overlays] Could not find viewports in grid state, using fallback");
+    viewportIds = ['default']; // Common default viewport ID
+  }
 
-	console.log("[AI Overlays] Active viewport IDs:", viewportIds);  // Process each diagnosis and create overlay layers
+  console.log("[AI Overlays] Active viewport IDs:", viewportIds);  // Process each diagnosis and create overlay layers
   for (const diagnosis of diagnoses) {
     console.log("[AI Overlays] Processing diagnosis:", diagnosis.id, diagnosis.status);
 
