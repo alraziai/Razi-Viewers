@@ -147,7 +147,7 @@ export function createOverlayService(servicesManager: ServicesManager) {
 
       // Check if conversion was successful
       if (!imageTopLeftCanvas || !imageBottomRightCanvas ||
-          imageTopLeftCanvas.length < 2 || imageBottomRightCanvas.length < 2) {
+        imageTopLeftCanvas.length < 2 || imageBottomRightCanvas.length < 2) {
         console.warn('Failed to convert world to canvas coordinates', {
           imageTopLeftCanvas,
           imageBottomRightCanvas,
@@ -230,9 +230,17 @@ export function createOverlayService(servicesManager: ServicesManager) {
     }
 
     try {
-      // Fetch and load the overlay image
+      // Fetch and load the overlay image with Authorization header
       console.log(`[Overlay Service] Fetching overlay image: ${layer.file}`);
-      const response = await fetch(layer.file);
+      let token = localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('access_token');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('[Overlay Service] ✅ Authorization header set:', `Bearer ${token.substring(0, 20)}...`);
+      } else {
+        console.warn('[Overlay Service] ❌ NO TOKEN FOUND - overlay image request may fail!');
+      }
+      const response = await fetch(layer.file, { headers });
 
       let imageBitmap: ImageBitmap;
 

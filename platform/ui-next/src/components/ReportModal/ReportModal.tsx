@@ -50,9 +50,9 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
       'Content-Type': 'application/json',
     };
 
-    // First, try to get token from cookies (shared across localhost ports)
-    let token = getCookie('auth_token') || getCookie('token') || getCookie('authToken') || getCookie('access_token');
-    console.log('[ReportModal] Token from cookies:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
+    // Always try to get token from localStorage first
+    let token = localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('access_token');
+    console.log('[ReportModal] Token from localStorage:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
 
     // Fallback: Try sessionStorage (from postMessage)
     if (!token) {
@@ -60,10 +60,10 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
       console.log('[ReportModal] Token from sessionStorage:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
     }
 
-    // Fallback: Try to get token from localStorage (if running on same origin)
+    // Fallback: Try to get token from cookies (shared across localhost ports)
     if (!token) {
-      token = localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('access_token');
-      console.log('[ReportModal] Token from localStorage:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
+      token = getCookie('auth_token') || getCookie('token') || getCookie('authToken') || getCookie('access_token');
+      console.log('[ReportModal] Token from cookies:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
     }
 
     // Last resort: Check sessionStorage for other possible token keys
