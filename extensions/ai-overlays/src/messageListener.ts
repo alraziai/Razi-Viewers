@@ -91,7 +91,7 @@ export function initializeMessageListener(servicesManager: ServicesManager) {
   // Listen for messages from the dashboard
   const handleMessage = async (event: MessageEvent) => {
     // Security: In production, verify the origin
-    // if (event.origin !== 'https://dashboard.alrazi.com') return;
+    if (event.origin !== 'https://radiology.alrazi.ai') return;
 
     const message = event.data as DiagnosisMessage;
     console.log("[AI Overlays] Received message:", message.type, message);
@@ -175,7 +175,7 @@ async function processDiagnoses(
 	// Get all active viewports
 	const gridState = viewportGridService.getState();
 	console.log("[AI Overlays] Grid state:", gridState);
-	
+
 	// Handle different viewport grid state structures
 	let viewportIds: string[] = [];
 	if (gridState?.viewports && Array.isArray(gridState.viewports)) {
@@ -189,7 +189,7 @@ async function processDiagnoses(
 		console.warn("[AI Overlays] Could not find viewports in grid state, using fallback");
 		viewportIds = ['default']; // Common default viewport ID
 	}
-	
+
 	console.log("[AI Overlays] Active viewport IDs:", viewportIds);  // Process each diagnosis and create overlay layers
   for (const diagnosis of diagnoses) {
     console.log("[AI Overlays] Processing diagnosis:", diagnosis.id, diagnosis.status);
@@ -303,12 +303,12 @@ function getOverlayImageUrl(imagePath: string): string {
   // If it starts with /, it's absolute from the API root
   if (imagePath.startsWith("/")) {
     // Use the dashboard API base URL
-    const apiBase = "http://localhost:3001"; // Update this to match your dashboard URL
+    const apiBase = "https://api.alrazi.ai/api"; // Update this to match your dashboard URL
     return `${apiBase}${imagePath}`;
   }
 
   // Otherwise, treat as relative to API
-  const apiBase = "http://localhost:3001/api";
+  const apiBase = "https://api.alrazi.ai/api";
   return `${apiBase}/${imagePath}`;
 }
 
