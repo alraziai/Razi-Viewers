@@ -356,3 +356,4 @@ export function createOverlayService(servicesManager: ServicesManager) {
     removeAll,
     hasLayer
   };
+}
