@@ -97,7 +97,7 @@ export function initializeMessageListener(servicesManager: ServicesManager) {
     // --- NEW: Extract auth token from URL if present ---
     try {
       const url = new URL(window.location.href);
-      const authToken = url.searchParams.get("auth");
+      const authToken = url.searchParams.get("auth_token");
       if (authToken) {
         const decryptedToken = await decrypt(authToken);
         sessionStorage.setItem("auth_token", decryptedToken);
