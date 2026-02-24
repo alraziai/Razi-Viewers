@@ -233,6 +233,7 @@ export function createOverlayService(servicesManager: ServicesManager) {
       // Fetch and load the overlay image with Authorization header
       console.log(`[Overlay Service] Fetching overlay image: ${layer.file}`);
       let token = localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('access_token');
+      console.log('[Overlay Service] Retrieved token from localStorage:', token ? `Found (${token.length} chars)` : 'Not found');
       const headers: Record<string, string> = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
