@@ -220,8 +220,8 @@ function ViewportAIOverlaysMenu({
     if (layersToHide.length > 0) {
       console.log('[AI Overlays Menu] Hiding layers from previous display set:', layersToHide);
       layersToHide.forEach(layerId => {
-        if (overlay.hasLayer?.(viewportId, layerId)) {
-          overlay.show(viewportId, layerId, false);
+        if (overlay.hasLayer?.()(viewportId, layerId)) {
+          overlay.removeLayer?.()(viewportId, layerId);
         }
       });
     }
@@ -284,13 +284,16 @@ function ViewportAIOverlaysMenu({
     const timeoutId = setTimeout(async () => {
       for (const layer of layers) {
         if (layer.file) {
-          const layerExists = overlay.hasLayer?.(viewportId, layer.id);
+          const layerExists = overlay.hasLayer?.()(viewportId, layer.id);
           if (!layerExists) {
             console.log('[AI Overlays Menu] Adding layer:', layer.id, layer.file);
             await overlay.addLayer(viewportId, layer, baseImageId);
           }
-
-          overlay.show(viewportId, layer.id, enabled[layer.id] || false);
+          if (enabled[layer.id]) {
+            overlay.show?.()(viewportId, layer.id);
+          } else {
+            overlay.removeLayer?.()(viewportId, layer.id);
+          }
         }
       }
     }, 100);
@@ -301,10 +304,22 @@ function ViewportAIOverlaysMenu({
   }, [viewportId, baseImageId, layers, enabled, overlay]);
 
   const handleToggle = (layerId: string) => {
-    setEnabled(prev => ({
-      ...prev,
-      [layerId]: !prev[layerId],
-    }));
+    setEnabled(prev => {
+      const next = { ...prev, [layerId]: !prev[layerId] };
+      const layer = layers.find(l => l.id === layerId);
+      if (!layer || !viewportId || !baseImageId) return next;
+      if (next[layerId]) {
+        // Enable: add and show overlay
+        if (!overlay.hasLayer?.()(viewportId, layerId)) {
+          overlay.addLayer(viewportId, layer, baseImageId);
+        }
+        overlay.show?.()(viewportId, layerId);
+      } else {
+        // Disable: remove overlay
+        overlay.removeLayer?.()(viewportId, layerId);
+      }
+      return next;
+    });
   };
 
   const handleOpenChange = (openState: boolean) => {

@@ -325,19 +325,54 @@ export function createOverlayService(servicesManager: ServicesManager) {
   }
 
   function show() {
-    // Implement show logic or remove if not needed
+    // Show a specific overlay layer by setting visible to true and re-rendering
+    return function show(viewportId: string, layerId: string) {
+      const layerMap = handles.get(viewportId);
+      if (!layerMap) return;
+      const handle = layerMap.get(layerId);
+      if (handle) {
+        handle.visible = true;
+        renderOverlay(viewportId, layerId);
+      }
+    };
   }
 
   function setOpacity() {
-    // Implement setOpacity logic or remove if not needed
+    // Set opacity for a specific overlay layer
+    return function setOpacity(viewportId: string, layerId: string, opacity: number) {
+      const layerMap = handles.get(viewportId);
+      if (!layerMap) return;
+      const handle = layerMap.get(layerId);
+      if (handle) {
+        handle.opacity = opacity;
+        renderOverlay(viewportId, layerId);
+      }
+    };
   }
 
   function removeLayer() {
-    // Implement removeLayer logic or remove if not needed
+    // Remove overlay layer for a given viewport and layerId
+    return function removeLayer(viewportId: string, layerId: string) {
+      const layerMap = handles.get(viewportId);
+      if (!layerMap) return;
+      const handle = layerMap.get(layerId);
+      if (handle) {
+        handle.canvas.remove();
+        layerMap.delete(layerId);
+      }
+      // If no layers left, remove the map
+      if (layerMap.size === 0) {
+        handles.delete(viewportId);
+      }
+    };
   }
 
   function hasLayer() {
-    // Implement hasLayer logic or remove if not needed
+    // Check if a layer exists for a given viewport
+    return function hasLayer(viewportId: string, layerId: string) {
+      const layerMap = handles.get(viewportId);
+      return !!layerMap && layerMap.has(layerId);
+    };
   }
 
   return {

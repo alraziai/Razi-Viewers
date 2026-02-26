@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSystem } from '@ohif/core';
 import { diagnosisStore } from '../diagnosisStore';
 import { getViewportStudyUID } from '../utils/studyOverlays';
@@ -137,6 +137,8 @@ export default function OverlayPanel() {
   const [activeViewportId, setActiveViewportId] = useState<string | null>(null);
   const [studyUID, setStudyUID] = useState<string | null>(null);
   const [diagnoses, setDiagnoses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const forceUpdate = React.useReducer(() => ({}), {})[1];
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize viewport on mount and subscribe to changes
@@ -189,23 +191,20 @@ export default function OverlayPanel() {
 
   // Subscribe to diagnosis store and update when diagnoses change
   useEffect(() => {
+    setLoading(true);
     const updateDiagnoses = () => {
       if (!studyUID) {
         setDiagnoses([]);
+        setLoading(false);
         return;
       }
-
       const storeDiagnoses = diagnosisStore.getDiagnoses(studyUID);
-      console.log('[Overlay Panel] Updated diagnoses:', storeDiagnoses.length);
       setDiagnoses(storeDiagnoses);
+      setLoading(false);
+      forceUpdate(); // Force re-render in case React misses the update
     };
-
-    // Initial update
     updateDiagnoses();
-
-    // Subscribe to changes
     const unsubscribe = diagnosisStore.subscribe(updateDiagnoses);
-
     return unsubscribe;
   }, [studyUID]);
 
@@ -244,12 +243,20 @@ export default function OverlayPanel() {
         </div>
       ) : !studyUID ? (
         <div className="text-sm text-white">No study loaded in viewport.</div>
-      ) : diagnoses.length === 0 ? (
-        <div className="text-sm text-white">
+      ) : loading ? (
+        <div className="text-sm text-white flex flex-col items-center justify-center">
+          <svg className="animate-spin h-6 w-6 text-white mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+          </svg>
           <p className="mb-2">Waiting for AI diagnosis data...</p>
           <p className="text-xs text-white/60">
             Diagnosis data will appear here when received from the dashboard.
           </p>
+        </div>
+      ) : diagnoses.length === 0 ? (
+        <div className="text-sm text-white">
+          <p className="mb-2">No AI diagnosis data found for this study.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -353,7 +360,7 @@ export default function OverlayPanel() {
                         />
                         <span className="text-white">{label}</span>
                       </div>
-                      <span className="text-white">{count}</span>
+                      <span className="text-white">{String(count)}</span>
                     </div>
                   );
                 })}
