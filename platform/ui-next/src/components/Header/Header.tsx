@@ -51,17 +51,16 @@ function Header({
   const user = authState?.user;
   const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
 
-  // Get studyId from URL query params
-  const getStudyIdFromUrl = () => {
+
+  // Get diagnosisId from URL query params
+  const getDiagnosisIdFromUrl = () => {
     const search = window.location.search || '';
     const hash = window.location.hash || '';
     const queryFromHash = hash.includes('?') ? hash.slice(hash.indexOf('?')) : '';
     const query = search.length > 1 ? search : queryFromHash;
     const params = new URLSearchParams(query);
-    const studyInstanceUIDs = params.get('StudyInstanceUIDs') ||
-      '';
-
-    return studyInstanceUIDs || '';
+    // Accept both diagnosisId and diagnosesId for flexibility
+    return params.get('diagnosisId') || '';
   };
 
   // Get user initials
@@ -100,11 +99,11 @@ function Header({
   };
 
   const handleGenerateReport = () => {
-    const studyId = getStudyIdFromUrl();
-    if (studyId) {
+    const diagnosisId = getDiagnosisIdFromUrl();
+    if (diagnosisId) {
       setIsReportModalOpen(true);
     } else {
-      alert('No study ID found in URL');
+      alert('No diagnosis ID found in URL');
     }
   }
 
@@ -217,7 +216,7 @@ function Header({
       <ReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
-        studyId={getStudyIdFromUrl()}
+        diagnosisId={getDiagnosisIdFromUrl()}
       />
     </IconPresentationProvider>
   );

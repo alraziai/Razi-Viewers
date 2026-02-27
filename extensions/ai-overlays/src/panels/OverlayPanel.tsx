@@ -143,14 +143,27 @@ export default function OverlayPanel() {
 
   // Initialize viewport on mount and subscribe to changes
   useEffect(() => {
-    // Get initial viewport ID
-    const gridState = viewportGridService.getState();
-    const initialViewportId = gridState?.activeViewportId;
+    let cancelled = false;
+    let retries = 0;
+    const maxRetries = 10;
+    const retryDelay = 300;
 
-    if (initialViewportId) {
-      setActiveViewportId(initialViewportId);
-      setIsInitialized(true);
+    function trySetViewportId() {
+      if (cancelled) return;
+      const gridState = viewportGridService.getState();
+      const initialViewportId = gridState?.activeViewportId;
+      if (initialViewportId) {
+        setActiveViewportId(initialViewportId);
+        setIsInitialized(true);
+      } else if (retries < maxRetries) {
+        retries++;
+        setTimeout(trySetViewportId, retryDelay);
+      } else {
+        setIsInitialized(true); // Give up, but allow UI to continue
+      }
     }
+
+    trySetViewportId();
 
     const handleViewportChange = ({ viewportId }: { viewportId: string }) => {
       setActiveViewportId(viewportId);
@@ -162,19 +175,9 @@ export default function OverlayPanel() {
       handleViewportChange
     );
 
-    // Fallback: If no viewport after a short delay, check again
-    const timeoutId = setTimeout(() => {
-      const currentGridState = viewportGridService.getState();
-      const currentViewportId = currentGridState?.activeViewportId;
-      if (currentViewportId && !activeViewportId) {
-        setActiveViewportId(currentViewportId);
-        setIsInitialized(true);
-      }
-    }, 500);
-
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
-      clearTimeout(timeoutId);
     };
   }, [viewportGridService]);
 

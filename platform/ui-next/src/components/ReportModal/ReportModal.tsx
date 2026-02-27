@@ -4,10 +4,10 @@ import { Button, Icons } from '../';
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  studyId: string;
+  diagnosisId: string | number;
 }
 
-export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
+export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) {
   const [reportData, setReportData] = useState<string>('');
   const [editedReport, setEditedReport] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -146,17 +146,17 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
   };
 
   useEffect(() => {
-    if (isOpen && studyId) {
+    if (isOpen && diagnosisId) {
       fetchReport();
     }
-  }, [isOpen, studyId]);
+  }, [isOpen, diagnosisId]);
 
   const fetchReport = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const reportPaths = getReportPaths(studyId);
+      const reportPaths = getReportPaths(String(diagnosisId));
       let response: Response | null = null;
       let responsePath = '';
       let sawNon404 = false;
@@ -253,7 +253,7 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
         dataToSave = { report: JSON.parse(editedReport) };
       }
 
-      const targetPath = resolvedReportPath || getReportPaths(studyId)[0];
+      const targetPath = resolvedReportPath || getReportPaths(String(diagnosisId))[0];
       console.info('[ReportModal] handleSave using path', targetPath);
 
       const response = await fetch(targetPath, {
@@ -467,7 +467,7 @@ export function ReportModal({ isOpen, onClose, studyId }: ReportModalProps) {
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div>
             <h2 className="text-2xl font-bold text-white">AI Diagnosis Report</h2>
-            <p className="text-sm text-white/60 mt-1">Study ID: {String(studyId)}</p>
+            <p className="text-sm text-white/60 mt-1">Diagnosis ID: {String(diagnosisId)}</p>
           </div>
           <button
             onClick={handleClose}
