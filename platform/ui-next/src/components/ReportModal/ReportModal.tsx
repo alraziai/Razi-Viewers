@@ -302,141 +302,65 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
     setEditedReport(JSON.stringify(newData, null, 2));
   };
 
-  const renderEditableField = (label: string, value: string, path: string[]) => (
-    <tr className="border-b border-white/5 hover:bg-white/5 transition-colors duration-200 ease-in-out">
-      <td className="py-3 px-4 text-sm font-medium text-white/80">{label}</td>
-      <td className="py-3 px-4">
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => updateNestedValue(path, e.target.value)}
-          className="w-full px-3 py-2 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#48FFF6] focus:ring-1 focus:ring-[#48FFF6]"
-        />
-      </td>
-    </tr>
-  );
 
-  const renderEditableTextArea = (label: string, value: string, path: string[]) => (
-    <tr className="border-b border-white/5 hover:bg-white/5 transition-colors duration-200 ease-in-out">
-      <td className="py-3 px-4 text-sm font-medium text-white/80 align-top">{label}</td>
-      <td className="py-3 px-4">
-        <textarea
-          value={value}
-          onChange={(e) => updateNestedValue(path, e.target.value)}
-          rows={3}
-          className="w-full px-3 py-2 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm resize-none focus:outline-none focus:border-[#48FFF6] focus:ring-1 focus:ring-[#48FFF6]"
-        />
-      </td>
-    </tr>
-  );
+  // Recursively render any object/array as editable key-value pairs
+  const renderKeyValue = (data: any, path: string[] = []) => {
+    if (typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean' || data === null) {
+      // Render as editable input or textarea for long strings
+      const isLong = typeof data === 'string' && data.length > 60;
+      return (
+        <tr className="border-b border-white/5 hover:bg-white/5 transition-colors duration-200 ease-in-out">
+          <td className="py-3 px-4 text-sm font-medium text-white/80">{path[path.length - 1]}</td>
+          <td className="py-3 px-4">
+            {isLong ? (
+              <textarea
+                value={data as string}
+                onChange={e => updateNestedValue(path, e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm resize-none focus:outline-none focus:border-[#48FFF6] focus:ring-1 focus:ring-[#48FFF6]"
+              />
+            ) : (
+              <input
+                type="text"
+                value={typeof data === 'boolean' ? String(data) : data}
+                onChange={e => updateNestedValue(path, e.target.value)}
+                className="w-full px-3 py-2 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#48FFF6] focus:ring-1 focus:ring-[#48FFF6]"
+              />
+            )}
+          </td>
+        </tr>
+      );
+    }
+    if (Array.isArray(data)) {
+      return data.map((item, idx) => renderKeyValue(item, [...path, String(idx)]));
+    }
+    if (typeof data === 'object' && data !== null) {
+      return Object.entries(data).map(([key, value]) => (
+        <React.Fragment key={key + path.join('.')}>
+          {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
+            <tr className="bg-white/5">
+              <td colSpan={2} className="py-2 px-4 text-sm font-semibold text-white/90">{key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</td>
+            </tr>
+          ) : null}
+          {renderKeyValue(value, [...path, key])}
+        </React.Fragment>
+      ));
+    }
+    return null;
+  };
 
   const renderFormattedView = () => {
     if (!parsedData) return null;
-
-    const { findings, recommendations, potential_diagnosis } = parsedData;
-
     return (
       <div className="space-y-6">
-        {/* Findings Section */}
-        {findings && (
-          <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
-            <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
-              <h3 className="text-lg font-semibold text-[#48FFF6]">Findings</h3>
-            </div>
-            <table className="w-full">
-              <tbody>
-                {findings.predental_space && renderEditableField('Predental Space', findings.predental_space, ['findings', 'predental_space'])}
-
-                {findings.alignment_observation && (
-                  <>
-                    <tr className="bg-white/5">
-                      <td colSpan={2} className="py-2 px-4 text-sm font-semibold text-white/90">Alignment Observation</td>
-                    </tr>
-                    {findings.alignment_observation.spinolaminar_line && renderEditableField('Spinolaminar Line', findings.alignment_observation.spinolaminar_line, ['findings', 'alignment_observation', 'spinolaminar_line'])}
-                    {findings.alignment_observation.anterior_longitudinal_line && renderEditableField('Anterior Longitudinal Line', findings.alignment_observation.anterior_longitudinal_line, ['findings', 'alignment_observation', 'anterior_longitudinal_line'])}
-                    {findings.alignment_observation.posterior_longitudinal_line && renderEditableField('Posterior Longitudinal Line', findings.alignment_observation.posterior_longitudinal_line, ['findings', 'alignment_observation', 'posterior_longitudinal_line'])}
-                  </>
-                )}
-
-                {findings.vertebrae_observation && renderEditableTextArea('Vertebrae Observation', findings.vertebrae_observation, ['findings', 'vertebrae_observation'])}
-
-                {findings.soft_tissue_line_observation && (
-                  <>
-                    <tr className="bg-white/5">
-                      <td colSpan={2} className="py-2 px-4 text-sm font-semibold text-white/90">Soft Tissue Line Observation</td>
-                    </tr>
-                    {findings.soft_tissue_line_observation.large && renderEditableField('Large', findings.soft_tissue_line_observation.large, ['findings', 'soft_tissue_line_observation', 'large'])}
-                    {findings.soft_tissue_line_observation.narrow && renderEditableField('Narrow', findings.soft_tissue_line_observation.narrow, ['findings', 'soft_tissue_line_observation', 'narrow'])}
-                  </>
-                )}
-
-                {findings.intervertebral_space_observation && (
-                  <>
-                    <tr className="bg-white/5">
-                      <td colSpan={2} className="py-2 px-4 text-sm font-semibold text-white/90">Intervertebral Space Observation</td>
-                    </tr>
-                    {findings.intervertebral_space_observation.lateral_mass_spacing && (
-                      <>
-                        <tr className="bg-white/3">
-                          <td colSpan={2} className="py-2 px-4 pl-8 text-xs font-medium text-white/70">Lateral Mass Spacing</td>
-                        </tr>
-                        {Object.entries(findings.intervertebral_space_observation.lateral_mass_spacing).map(([key, value]) =>
-                          renderEditableField(key, value as string, ['findings', 'intervertebral_space_observation', 'lateral_mass_spacing', key])
-                        )}
-                      </>
-                    )}
-                    {findings.intervertebral_space_observation.vertebral_body_spacing && (
-                      <>
-                        <tr className="bg-white/3">
-                          <td colSpan={2} className="py-2 px-4 pl-8 text-xs font-medium text-white/70">Vertebral Body Spacing</td>
-                        </tr>
-                        {Object.entries(findings.intervertebral_space_observation.vertebral_body_spacing).map(([key, value]) =>
-                          renderEditableField(key, value as string, ['findings', 'intervertebral_space_observation', 'vertebral_body_spacing', key])
-                        )}
-                      </>
-                    )}
-                  </>
-                )}
-              </tbody>
-            </table>
+        <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
+          <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
+            <h3 className="text-lg font-semibold text-[#48FFF6]">Report</h3>
           </div>
-        )}
-
-        {/* Recommendations Section */}
-        {recommendations && (
-          <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
-            <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
-              <h3 className="text-lg font-semibold text-[#48FFF6]">Recommendations</h3>
-            </div>
-            <table className="w-full">
-              <tbody>
-                {recommendations.follow_up && renderEditableTextArea('Follow Up', recommendations.follow_up, ['recommendations', 'follow_up'])}
-                {recommendations.further_imaging && renderEditableTextArea('Further Imaging', recommendations.further_imaging, ['recommendations', 'further_imaging'])}
-                {recommendations.clinical_correlation && renderEditableTextArea('Clinical Correlation', recommendations.clinical_correlation, ['recommendations', 'clinical_correlation'])}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Potential Diagnosis Section */}
-        {potential_diagnosis && (
-          <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
-            <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
-              <h3 className="text-lg font-semibold text-[#48FFF6]">Potential Diagnosis</h3>
-            </div>
-            <table className="w-full">
-              <tbody>
-                {Object.entries(potential_diagnosis).map(([key, value]) =>
-                  renderEditableTextArea(
-                    key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
-                    value as string,
-                    ['potential_diagnosis', key]
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+          <table className="w-full">
+            <tbody>{renderKeyValue(parsedData)}</tbody>
+          </table>
+        </div>
       </div>
     );
   };
