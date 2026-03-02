@@ -25,6 +25,7 @@
   "scripts": {
     "cm": "npx git-cz",
     "build": "lerna run build:viewer --stream",
+    "build:lowmem": "cross-env LOW_MEMORY=1 lerna run build:viewer --stream",
     "build:dev": "lerna run build:dev --stream",
     "build:ci": "lerna run build:viewer:ci --stream",
     "build:qa": "lerna run build:viewer:qa --stream",
@@ -76,7 +77,10 @@
     "lerna:cache": "./netlify-lerna-cache.sh",
     "lerna:restore": "./netlify-lerna-restore.sh",
     "lerna:customVersion": "node version.mjs",
-    "link-list": "npm ls --depth=0 --link=true"
+    "link-list": "npm ls --depth=0 --link=true",
+    "lint": "eslint \"platform/**/*.{js,jsx,ts,tsx}\" \"extensions/**/*.{js,jsx,ts,tsx}\" \"modes/**/*.{js,jsx,ts,tsx}\" --max-warnings 0",
+    "lint:fix": "eslint \"platform/**/*.{js,jsx,ts,tsx}\" \"extensions/**/*.{js,jsx,ts,tsx}\" \"modes/**/*.{js,jsx,ts,tsx}\" --fix",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "execa": "8.0.1"

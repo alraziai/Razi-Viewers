@@ -237,9 +237,11 @@ module.exports = (env, argv, { SRC_DIR, ENTRY }) => {
   };
 
   if (isProdBuild) {
+    // Use single-threaded Terser when LOW_MEMORY=1 (e.g. on VMs with limited RAM) to avoid OOM (exit 137)
+    const lowMemory = process.env.LOW_MEMORY === '1' || process.env.LOW_MEMORY === 'true';
     config.optimization.minimizer = [
       new TerserJSPlugin({
-        parallel: true,
+        parallel: !lowMemory,
         terserOptions: {},
       }),
     ];
