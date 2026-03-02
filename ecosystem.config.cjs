@@ -16,8 +16,7 @@ module.exports = {
   apps: [
     {
       name: 'razi-viewer',
-      script: 'node_modules/.bin/serve',
-      args: ['platform/app/dist', '-s', '-l', process.env.PORT || '3000'],
+      script: 'serve-dist.js',
       cwd: __dirname,
       instances: 1,
       exec_mode: 'fork',
@@ -25,7 +24,6 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: process.env.PORT || 3000,
       },
-      // Restart if the app crashes or uses too much memory
       max_memory_restart: '1G',
       merge_logs: true,
       time: true,
