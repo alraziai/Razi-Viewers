@@ -375,6 +375,11 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
     }
   };
 
+  const handleDownloadReport = () => {
+    // TODO: Implement report download
+    console.log('Downloading report...');
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -393,12 +398,20 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
             <h2 className="text-2xl font-bold text-white">AI Diagnosis Report</h2>
             <p className="text-sm text-white/60 mt-1">Diagnosis ID: {String(diagnosisId)}</p>
           </div>
-          <button
-            onClick={handleClose}
-            className="rounded-lg p-2 text-white/60 transition-colors ease-in-out duration-200 hover:bg-white/10 hover:text-white"
-          >
-            <Icons.Close className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadReport}
+              className="rounded-lg p-2 text-white/60 transition-colors ease-in-out duration-200 hover:bg-white/10 hover:text-white cursor-pointer"
+            >
+              <Icons.ByName name="download" className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleClose}
+              className="rounded-lg p-2 text-white/60 transition-colors ease-in-out duration-200 hover:bg-white/10 hover:text-white cursor-pointer"
+            >
+              <Icons.Close className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
