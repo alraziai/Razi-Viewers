@@ -443,7 +443,7 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
             <button
               onClick={handleSave}
               disabled={isSaving || editedReport === reportData}
-              className="inline-flex items-center gap-2 rounded-lg bg-linear-to-r from-[#2E86D5] to-[#48FFF6] px-6 py-2.5 text-sm font-semibold text-[#0D0FAF] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-linear-to-r from-[#2E86D5] to-[#48FFF6] px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSaving ? (
                 <>
