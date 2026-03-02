@@ -1,9 +1,9 @@
 /**
  * Updated index.ts for ai-overlays extension
- * 
+ *
  * This file should REPLACE:
  * /home/yusuf/Work/alriza/medical-imaging-app/Razi-Viewers/extensions/ai-overlays/src/index.ts
- * 
+ *
  * Adds message listener initialization for dashboard integration
  */
 
@@ -19,7 +19,7 @@ const aiOverlaysExtension: Types.Extensions.Extension = {
   preRegistration({ servicesManager }) {
     // Register the overlay image loader
     registerOverlayLoader();
-    
+
     // Initialize message listener for dashboard integration
     console.log('[AI Overlays] Initializing message listener for dashboard integration...');
     initializeMessageListener(servicesManager);

@@ -20,7 +20,7 @@ export default function getToolbarModule({ servicesManager }: withAppTypes) {
         }
 
         // Show AI overlays menu for all viewports that have images
-        const currentImageId = viewport.getCurrentImageId?.();
+        const currentImageId = (viewport as { getCurrentImageId?: () => string }).getCurrentImageId?.();
         if (!currentImageId) {
           return {
             disabled: true,

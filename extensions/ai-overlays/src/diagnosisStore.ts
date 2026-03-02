@@ -1,10 +1,10 @@
 /**
  * Diagnosis Store - Central store for diagnosis data received from dashboard
- * 
+ *
  * This replaces the dummy data generation with real diagnosis data from the API
  */
 
-type DiagnosisData = {
+export type DiagnosisData = {
   id: number;
   radiologist_id: number;
   dicom_instance_id: number;
@@ -25,7 +25,12 @@ type DiagnosisImage = {
   id: number;
   diagnosis_id: number;
   image_path: string;
-  type: 'source_img' | 'contour_img' | 'all_labels_img' | 'alignment_lines_img' | 'Intervertebral_space_img';
+  type:
+    | 'source_img'
+    | 'contour_img'
+    | 'all_labels_img'
+    | 'alignment_lines_img'
+    | 'Intervertebral_space_img';
   created_at: string;
   updated_at: string;
 };
@@ -53,11 +58,11 @@ class DiagnosisStore {
   setDiagnoses(studyUID: string, diagnoses: DiagnosisData[]) {
     console.log('[Diagnosis Store] Storing diagnoses for study:', studyUID, diagnoses.length);
     this.diagnoses.set(studyUID, diagnoses);
-    
+
     // Generate layers from diagnoses
     const layers = this.generateLayersFromDiagnoses(studyUID, diagnoses);
     this.layers.set(studyUID, layers);
-    
+
     // Notify listeners
     this.notifyListeners();
   }
@@ -127,7 +132,7 @@ class DiagnosisStore {
 
       for (const diagImage of diagnosis.diagnosis_images) {
         const layerId = `diagnosis-${diagnosis.id}-${diagImage.type}-${diagImage.id}`;
-        
+
         // Determine the overlay image URL
         const overlayImageUrl = this.getOverlayImageUrl(diagImage.image_path);
 
@@ -137,7 +142,7 @@ class DiagnosisStore {
         // Create friendly label
         const statusLabel = diagnosis.status ? `[${diagnosis.status}]` : '';
         const typeLabel = this.getImageTypeLabel(diagImage.type);
-        
+
         layers.push({
           id: layerId,
           label: `${typeLabel} ${statusLabel}`.trim(),
@@ -167,16 +172,16 @@ class DiagnosisStore {
 
     // If it starts with /, it's absolute from the API root
     if (imagePath.startsWith('/')) {
-      const apiBase = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001' 
-        : window.location.origin;
+      const apiBase =
+        window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin;
       return `${apiBase}${imagePath}`;
     }
 
     // Otherwise, treat as relative to API
-    const apiBase = window.location.hostname === 'localhost' 
-      ? 'http://localhost:3001/api' 
-      : `${window.location.origin}/api`;
+    const apiBase =
+      window.location.hostname === 'localhost'
+        ? 'http://localhost:3001/api'
+        : `${window.location.origin}/api`;
     return `${apiBase}/${imagePath}`;
   }
 

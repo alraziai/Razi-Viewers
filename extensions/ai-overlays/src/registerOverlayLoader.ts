@@ -1,9 +1,30 @@
 // No strict Cornerstone types. Avoids red squiggles across versions.
 import { imageLoader, metaData } from '@cornerstonejs/core';
 
+interface OverlayImageLike {
+  imageId: string;
+  getPixelData: () => Uint8ClampedArray;
+  rows: number;
+  columns: number;
+  height: number;
+  width: number;
+  color: boolean;
+  rgba: boolean;
+  numberOfComponents: number;
+  minPixelValue: number;
+  maxPixelValue: number;
+  slope: number;
+  intercept: number;
+  windowCenter: number[];
+  windowWidth: number[];
+  sizeInBytes: number;
+  __overlayTarget?: string;
+}
+
 // imageId: overlay:/overlays/<StudyUID>/<file>.png|targetImageId=<urlencoded base imageId>
 export function registerOverlayLoader() {
-  imageLoader.registerImageLoader('overlay', (imageId: string) => {
+  // Overlay loader returns a minimal image shape; Cornerstone accepts it at runtime
+  imageLoader.registerImageLoader('overlay', ((imageId: string) => {
     const raw = imageId.slice('overlay:'.length);
     const [urlPart, queryPart] = raw.split('|');
     const url = urlPart;
@@ -12,7 +33,9 @@ export function registerOverlayLoader() {
 
     const promise = (async () => {
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`Overlay fetch failed: ${url}`);
+      if (!res.ok) {
+        throw new Error(`Overlay fetch failed: ${url}`);
+      }
       const blob = await res.blob();
       const bmp = await createImageBitmap(blob);
       const width = bmp.width;
@@ -23,18 +46,15 @@ export function registerOverlayLoader() {
           ? new OffscreenCanvas(width, height)
           : (document.createElement('canvas') as HTMLCanvasElement);
 
-      // @ts-ignore width/height for OffscreenCanvas and HTMLCanvasElement
       canvas.width = width;
-      // @ts-ignore
       canvas.height = height;
 
-      // @ts-ignore
       const ctx = canvas.getContext('2d')!;
       ctx.drawImage(bmp, 0, 0);
       const { data } = ctx.getImageData(0, 0, width, height);
       const pixelData = new Uint8ClampedArray(data.buffer); // RGBA
 
-      const image: any = {
+      const image: OverlayImageLike = {
         imageId,
         getPixelData: () => pixelData,
         rows: height,
@@ -58,14 +78,8 @@ export function registerOverlayLoader() {
       return image;
     })();
 
-    // Return a generic load object compatible with Cornerstone
-    return {
-      promise,
-      cancelFn: () => {
-        // No-op for now
-      },
-    };
-  });
+    return { promise, cancelFn: () => {} };
+  }) as Parameters<typeof imageLoader.registerImageLoader>[1]);
 
   // Register metadata provider to copy geometry from target image
   metaData.addProvider((type: string, imageId: string) => {
@@ -79,7 +93,7 @@ export function registerOverlayLoader() {
     }
 
     const raw = imageId.slice('overlay:'.length);
-    const [urlPart, queryPart] = raw.split('|');
+    const [, queryPart] = raw.split('|');
     const params = new URLSearchParams(queryPart || '');
     const targetImageId = params.get('targetImageId');
 

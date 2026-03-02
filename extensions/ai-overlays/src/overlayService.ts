@@ -1,7 +1,13 @@
 import type { ServicesManager } from '@ohif/core';
 import { Enums, utilities, metaData } from '@cornerstonejs/core';
 
-type LayerDef = { id: string; label: string; file: string; defaultOpacity?: number; color?: string };
+type LayerDef = {
+  id: string;
+  label: string;
+  file: string;
+  defaultOpacity?: number;
+  color?: string;
+};
 type OverlayHandle = {
   canvas: HTMLCanvasElement;
   imageData: ImageBitmap | null;
@@ -10,14 +16,28 @@ type OverlayHandle = {
   color?: string;
 };
 
-export function createOverlayService(servicesManager: ServicesManager) {
-  const { cornerstoneViewportService } = (servicesManager as any).services;
+/** Cornerstone viewport shape used for overlay rendering */
+type CornerstoneViewportLike = {
+  getCurrentImageId?: () => string;
+  getImageData?: () => { width?: number; height?: number; columns?: number; rows?: number };
+  getCamera?: () => unknown;
+  worldToCanvas?: (world: number[]) => number[];
+};
+
+type ServicesManagerWithServices = ServicesManager & {
+  services: { cornerstoneViewportService?: { getCornerstoneViewport: (id: string) => unknown } };
+};
+export function createOverlayService(servicesManager: ServicesManagerWithServices) {
+  const cornerstoneViewportService = servicesManager.services.cornerstoneViewportService;
+  if (!cornerstoneViewportService) {
+    throw new Error('cornerstoneViewportService is required');
+  }
 
   const handles = new Map<string, Map<string, OverlayHandle>>();
   const viewportElements = new Map<string, HTMLElement>();
 
-  function getVp(viewportId: string): any {
-    return cornerstoneViewportService.getCornerstoneViewport(viewportId);
+  function getVp(viewportId: string): CornerstoneViewportLike | undefined {
+    return cornerstoneViewportService.getCornerstoneViewport(viewportId) as CornerstoneViewportLike | undefined;
   }
 
   function getViewportElement(viewportId: string): HTMLElement | null {
@@ -39,13 +59,16 @@ export function createOverlayService(servicesManager: ServicesManager) {
     }
 
     // Check if canvas already exists
-    const existing = viewportElement.parentElement?.querySelector(`canvas[data-overlay="${layerId}"]`) as HTMLCanvasElement;
+    const existing = viewportElement.parentElement?.querySelector(
+      `canvas[data-overlay="${layerId}"]`
+    ) as HTMLCanvasElement;
     if (existing) {
       return existing;
     }
 
     // Find the viewport wrapper
-    const viewportWrapper = viewportElement.closest('.viewport-wrapper') || viewportElement.parentElement;
+    const viewportWrapper =
+      viewportElement.closest('.viewport-wrapper') || viewportElement.parentElement;
     if (!viewportWrapper) {
       throw new Error(`Viewport wrapper not found for ${viewportId}`);
     }
@@ -69,11 +92,15 @@ export function createOverlayService(servicesManager: ServicesManager) {
   function renderOverlay(viewportId: string, layerId: string) {
     const vp = getVp(viewportId);
     const handle = handles.get(viewportId)?.get(layerId);
-    if (!vp || !handle || !handle.imageData || !handle.visible) return;
+    if (!vp || !handle || !handle.imageData || !handle.visible) {
+      return;
+    }
 
     const canvas = handle.canvas;
     const viewportElement = getViewportElement(viewportId);
-    if (!viewportElement) return;
+    if (!viewportElement) {
+      return;
+    }
 
     // Get viewport dimensions
     const { width, height } = viewportElement.getBoundingClientRect();
@@ -81,16 +108,22 @@ export function createOverlayService(servicesManager: ServicesManager) {
     canvas.height = height;
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
     ctx.clearRect(0, 0, width, height);
 
     try {
-      const currentImageId = vp.getCurrentImageId();
-      if (!currentImageId) return;
+      const currentImageId = vp.getCurrentImageId?.();
+      if (!currentImageId) {
+        return;
+      }
 
-      const image = vp.getImageData();
-      if (!image) return;
+      const image = vp.getImageData?.();
+      if (!image) {
+        return;
+      }
 
       // Get image dimensions from metadata (for StackViewport)
       const imagePixelModule = metaData.get('imagePixelModule', currentImageId);
@@ -103,8 +136,10 @@ export function createOverlayService(servicesManager: ServicesManager) {
       }
 
       // Get the camera to understand the current view
-      const camera = vp.getCamera();
-      if (!camera) return;
+      const camera = vp.getCamera?.();
+      if (!camera) {
+        return;
+      }
 
       // For StackViewport, get world coordinates using imageToWorldCoords
       // Image coordinates are 1-indexed, so top-left is (1,1)
@@ -124,13 +159,16 @@ export function createOverlayService(servicesManager: ServicesManager) {
       }
 
       // Convert top-left world coordinate to canvas
-      const imageTopLeftCanvas = vp.worldToCanvas(imageTopLeftWorld);
+      const imageTopLeftCanvas = vp.worldToCanvas?.(imageTopLeftWorld);
 
       // Calculate bottom-right by getting world coords for a point offset by image dimensions
       // Use a point near the bottom-right (slightly inside to avoid edge issues)
       let imageBottomRightWorld: number[];
       try {
-        imageBottomRightWorld = utilities.imageToWorldCoords(currentImageId, [imageWidth - 0.5, imageHeight - 0.5]);
+        imageBottomRightWorld = utilities.imageToWorldCoords(currentImageId, [
+          imageWidth - 0.5,
+          imageHeight - 0.5,
+        ]);
         if (imageBottomRightWorld.length < 3) {
           imageBottomRightWorld = [...imageBottomRightWorld, 0];
         }
@@ -139,15 +177,19 @@ export function createOverlayService(servicesManager: ServicesManager) {
         imageBottomRightWorld = [
           imageTopLeftWorld[0] + imageWidth,
           imageTopLeftWorld[1] + imageHeight,
-          imageTopLeftWorld[2] || 0
+          imageTopLeftWorld[2] || 0,
         ];
       }
 
-      const imageBottomRightCanvas = vp.worldToCanvas(imageBottomRightWorld);
+      const imageBottomRightCanvas = vp.worldToCanvas?.(imageBottomRightWorld);
 
       // Check if conversion was successful
-      if (!imageTopLeftCanvas || !imageBottomRightCanvas ||
-        imageTopLeftCanvas.length < 2 || imageBottomRightCanvas.length < 2) {
+      if (
+        !imageTopLeftCanvas ||
+        !imageBottomRightCanvas ||
+        imageTopLeftCanvas.length < 2 ||
+        imageBottomRightCanvas.length < 2
+      ) {
         console.warn('Failed to convert world to canvas coordinates', {
           imageTopLeftCanvas,
           imageBottomRightCanvas,
@@ -236,9 +278,14 @@ export function createOverlayService(servicesManager: ServicesManager) {
       const headers: Record<string, string> = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('[Overlay Service] ✅ Authorization header set:', `Bearer ${token.substring(0, 20)}...`);
+        console.log(
+          '[Overlay Service] ✅ Authorization header set:',
+          `Bearer ${token.substring(0, 20)}...`
+        );
       } else {
-        console.warn('[Overlay Service] ❌ NO auth_token cookie found - overlay image request may fail!');
+        console.warn(
+          '[Overlay Service] ❌ NO auth_token cookie found - overlay image request may fail!'
+        );
       }
       const response = await fetch(layer.file, { headers });
 
@@ -246,7 +293,11 @@ export function createOverlayService(servicesManager: ServicesManager) {
 
       // Check if response is ok and is an image
       if (!response.ok || !response.headers.get('content-type')?.startsWith('image/')) {
-        console.warn(`[Overlay Service] Failed to fetch overlay or not an image: ${layer.file}`, response.status, response.statusText);
+        console.warn(
+          `[Overlay Service] Failed to fetch overlay or not an image: ${layer.file}`,
+          response.status,
+          response.statusText
+        );
         // Create a dummy colored overlay for testing
         console.log(`[Overlay Service] Creating dummy overlay for testing`);
         const dummyCanvas = document.createElement('canvas');
@@ -265,9 +316,16 @@ export function createOverlayService(servicesManager: ServicesManager) {
         const blob = await response.blob();
         try {
           imageBitmap = await createImageBitmap(blob);
-          console.log(`[Overlay Service] Successfully loaded overlay image: ${layer.file}`, imageBitmap.width, imageBitmap.height);
+          console.log(
+            `[Overlay Service] Successfully loaded overlay image: ${layer.file}`,
+            imageBitmap.width,
+            imageBitmap.height
+          );
         } catch (decodeError) {
-          console.warn(`[Overlay Service] Failed to decode image, creating dummy: ${layer.file}`, decodeError);
+          console.warn(
+            `[Overlay Service] Failed to decode image, creating dummy: ${layer.file}`,
+            decodeError
+          );
           // Create dummy if decode fails
           const dummyCanvas = document.createElement('canvas');
           dummyCanvas.width = 512;
@@ -288,13 +346,15 @@ export function createOverlayService(servicesManager: ServicesManager) {
       // Store image data
       const handle: OverlayHandle = {
         canvas,
-        imageData: imageBitmap as any,
+        imageData: imageBitmap,
         opacity: layer.defaultOpacity ?? 0.5,
         visible: true,
         color: layer.color,
       };
 
-      if (!handles.has(viewportId)) handles.set(viewportId, new Map());
+      if (!handles.has(viewportId)) {
+        handles.set(viewportId, new Map());
+      }
       handles.get(viewportId)!.set(layer.id, handle);
 
       // Render the overlay
@@ -316,7 +376,9 @@ export function createOverlayService(servicesManager: ServicesManager) {
 
   function removeAll(viewportId: string) {
     const layerMap = handles.get(viewportId);
-    if (!layerMap) return;
+    if (!layerMap) {
+      return;
+    }
 
     layerMap.forEach((handle, layerId) => {
       handle.canvas.remove();
@@ -328,7 +390,9 @@ export function createOverlayService(servicesManager: ServicesManager) {
     // Show a specific overlay layer by setting visible to true and re-rendering
     return function show(viewportId: string, layerId: string) {
       const layerMap = handles.get(viewportId);
-      if (!layerMap) return;
+      if (!layerMap) {
+        return;
+      }
       const handle = layerMap.get(layerId);
       if (handle) {
         handle.visible = true;
@@ -341,7 +405,9 @@ export function createOverlayService(servicesManager: ServicesManager) {
     // Set opacity for a specific overlay layer
     return function setOpacity(viewportId: string, layerId: string, opacity: number) {
       const layerMap = handles.get(viewportId);
-      if (!layerMap) return;
+      if (!layerMap) {
+        return;
+      }
       const handle = layerMap.get(layerId);
       if (handle) {
         handle.opacity = opacity;
@@ -354,7 +420,9 @@ export function createOverlayService(servicesManager: ServicesManager) {
     // Remove overlay layer for a given viewport and layerId
     return function removeLayer(viewportId: string, layerId: string) {
       const layerMap = handles.get(viewportId);
-      if (!layerMap) return;
+      if (!layerMap) {
+        return;
+      }
       const handle = layerMap.get(layerId);
       if (handle) {
         handle.canvas.remove();
@@ -381,6 +449,6 @@ export function createOverlayService(servicesManager: ServicesManager) {
     setOpacity,
     removeLayer,
     removeAll,
-    hasLayer
+    hasLayer,
   };
 }

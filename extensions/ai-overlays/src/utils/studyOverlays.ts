@@ -1,9 +1,33 @@
-import { AppTypes } from '@ohif/core';
+/**
+ * Minimal display set shape used for overlay utilities.
+ * Matches @ohif/core DisplaySet for the fields we use.
+ */
+type DisplaySetLike = {
+  displaySetInstanceUID: string;
+  SeriesInstanceUID?: string;
+  label?: string;
+  StudyInstanceUID?: string;
+  Modality?: string;
+  SeriesDescription?: string;
+  SeriesNumber?: number;
+  unsupported?: boolean;
+  imageIds?: string[];
+  images?: unknown[];
+};
+
+type DisplaySetServiceLike = {
+  getActiveDisplaySets(): DisplaySetLike[];
+  getDisplaySetByUID(uid: string): DisplaySetLike | undefined;
+};
+
+type ViewportGridServiceLike = {
+  getDisplaySetsUIDsForViewport(viewportId: string): string[] | undefined;
+};
 
 /**
  * Get a unique identifier for a display set to use in file paths
  */
-export function getDisplaySetIdentifier(displaySet: AppTypes.DisplaySet): string {
+export function getDisplaySetIdentifier(displaySet: DisplaySetLike): string {
   // Use displaySetInstanceUID as the primary identifier
   // Fallback to SeriesInstanceUID or label if needed
   return (
@@ -85,8 +109,8 @@ export function generateOverlayColor(displaySetId: string, layerType: 'heatmap' 
  * This includes all display sets except unsupported ones and non-image types
  */
 export function getAllDisplaySetsForOverlays(
-  displaySetService: AppTypes.Services.DisplaySetService
-): AppTypes.DisplaySet[] {
+  displaySetService: DisplaySetServiceLike
+): DisplaySetLike[] {
   const allDisplaySets = displaySetService.getActiveDisplaySets();
 
   console.log('[AI Overlays] Total display sets:', allDisplaySets.length);
@@ -140,8 +164,8 @@ export function getAllDisplaySetsForOverlays(
  */
 export function getStudyDisplaySetsForOverlays(
   studyInstanceUID: string,
-  displaySetService: AppTypes.Services.DisplaySetService
-): AppTypes.DisplaySet[] {
+  displaySetService: DisplaySetServiceLike
+): DisplaySetLike[] {
   const allDisplaySets = getAllDisplaySetsForOverlays(displaySetService);
   return allDisplaySets.filter(displaySet => displaySet.StudyInstanceUID === studyInstanceUID);
 }
@@ -151,8 +175,8 @@ export function getStudyDisplaySetsForOverlays(
  */
 export function getViewportStudyUID(
   viewportId: string,
-  viewportGridService: AppTypes.Services.ViewportGridService,
-  displaySetService: AppTypes.Services.DisplaySetService
+  viewportGridService: ViewportGridServiceLike,
+  displaySetService: DisplaySetServiceLike
 ): string | null {
   const displaySetUIDs = viewportGridService.getDisplaySetsUIDsForViewport(viewportId);
   if (!displaySetUIDs || displaySetUIDs.length === 0) {
@@ -168,7 +192,7 @@ export function getViewportStudyUID(
  * Each display set gets a heatmap and mask layer
  */
 export function getAllStudiesOverlayLayers(
-  displaySetService: AppTypes.Services.DisplaySetService
+  displaySetService: DisplaySetServiceLike
 ): Map<
   string,
   Array<{
@@ -182,7 +206,18 @@ export function getAllStudiesOverlayLayers(
   }>
 > {
   const allDisplaySets = getAllDisplaySetsForOverlays(displaySetService);
-  const layersMap = new Map<string, Array<any>>();
+  const layersMap = new Map<
+    string,
+    Array<{
+      id: string;
+      label: string;
+      file: string;
+      defaultOpacity?: number;
+      color?: string;
+      displaySetId: string;
+      studyUID: string;
+    }>
+  >();
 
   console.log(
     '[AI Overlays] Found display sets for overlays:',
@@ -247,7 +282,7 @@ export function getAllStudiesOverlayLayers(
  */
 export function getStudyOverlayLayers(
   studyInstanceUID: string,
-  displaySetService: AppTypes.Services.DisplaySetService
+  displaySetService: DisplaySetServiceLike
 ): Array<{
   id: string;
   label: string;

@@ -1,5 +1,13 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { cn, Icons, useIconPresentation, Popover, PopoverTrigger, PopoverContent, Button } from '@ohif/ui-next';
+import {
+  cn,
+  Icons,
+  useIconPresentation,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  Button,
+} from '@ohif/ui-next';
 import { useSystem } from '@ohif/core';
 import { Enums } from '@cornerstonejs/core';
 import { createOverlayService } from '../../overlayService';
@@ -35,7 +43,8 @@ function ViewportAIOverlaysMenu({
   disabled?: boolean;
 }>) {
   const { servicesManager } = useSystem();
-  const { toolbarService, cornerstoneViewportService, viewportGridService, displaySetService } = servicesManager.services;
+  const { toolbarService, cornerstoneViewportService, viewportGridService, displaySetService } =
+    servicesManager.services;
   const { IconContainer, className: iconClassName, containerProps } = useIconPresentation();
   const overlay = useMemo(() => createOverlayService(servicesManager), [servicesManager]);
 
@@ -51,7 +60,9 @@ function ViewportAIOverlaysMenu({
   // Subscribe to diagnosis store changes and update layers
   useEffect(() => {
     const unsubscribe = diagnosisStore.subscribe(() => {
-      if (!studyUID) return;
+      if (!studyUID) {
+        return;
+      }
 
       // Get layers from diagnosis store
       const storeLayers = diagnosisStore.getLayers(studyUID);
@@ -64,11 +75,22 @@ function ViewportAIOverlaysMenu({
 
   // Get study UID for this viewport and get layers from diagnosis store
   useEffect(() => {
-    if (!viewportId) return;
+    if (!viewportId) {
+      return;
+    }
 
     const updateStudyLayers = () => {
-      const currentStudyUID = getViewportStudyUID(viewportId, viewportGridService, displaySetService);
-      console.log('[AI Overlays Menu] Viewport study UID:', currentStudyUID, 'Viewport ID:', viewportId);
+      const currentStudyUID = getViewportStudyUID(
+        viewportId,
+        viewportGridService,
+        displaySetService
+      );
+      console.log(
+        '[AI Overlays Menu] Viewport study UID:',
+        currentStudyUID,
+        'Viewport ID:',
+        viewportId
+      );
 
       if (currentStudyUID) {
         if (currentStudyUID !== studyUID) {
@@ -91,14 +113,8 @@ function ViewportAIOverlaysMenu({
 
     // Subscribe to display set changes
     const subscriptions = [
-      displaySetService.subscribe(
-        displaySetService.EVENTS.DISPLAY_SETS_ADDED,
-        updateStudyLayers
-      ),
-      displaySetService.subscribe(
-        displaySetService.EVENTS.DISPLAY_SETS_CHANGED,
-        updateStudyLayers
-      ),
+      displaySetService.subscribe(displaySetService.EVENTS.DISPLAY_SETS_ADDED, updateStudyLayers),
+      displaySetService.subscribe(displaySetService.EVENTS.DISPLAY_SETS_CHANGED, updateStudyLayers),
       viewportGridService.subscribe(
         viewportGridService.EVENTS.GRID_STATE_CHANGED,
         updateStudyLayers
@@ -112,7 +128,9 @@ function ViewportAIOverlaysMenu({
 
   // Get current display sets for the viewport and filter layers
   useEffect(() => {
-    if (!viewportId) return;
+    if (!viewportId) {
+      return;
+    }
 
     const updateCurrentDisplaySets = () => {
       const displaySetUIDs = viewportGridService.getDisplaySetsUIDsForViewport(viewportId) || [];
@@ -136,7 +154,7 @@ function ViewportAIOverlaysMenu({
           SeriesInstanceUID: ds.SeriesInstanceUID,
           label: ds.label,
           SeriesDescription: ds.SeriesDescription,
-        }))
+        })),
       });
     };
 
@@ -173,7 +191,10 @@ function ViewportAIOverlaysMenu({
       return layerDisplaySetId && currentDisplaySetIds.includes(layerDisplaySetId);
     });
 
-    console.log('[AI Overlays Menu] Filtered layers for current display sets:', filteredLayers.length);
+    console.log(
+      '[AI Overlays Menu] Filtered layers for current display sets:',
+      filteredLayers.length
+    );
     setLayers(filteredLayers);
   }, [allStudyLayers, currentDisplaySetIds]);
 
@@ -184,7 +205,9 @@ function ViewportAIOverlaysMenu({
 
   // Automatically uncheck and hide layers from previous display set when switching
   useEffect(() => {
-    if (!viewportId || allStudyLayers.length === 0) return;
+    if (!viewportId || allStudyLayers.length === 0) {
+      return;
+    }
 
     // Check if display set IDs actually changed
     const displaySetIdsChanged =
@@ -199,14 +222,15 @@ function ViewportAIOverlaysMenu({
     prevDisplaySetIdsRef.current = [...currentDisplaySetIds];
 
     // Get IDs of layers that belong to current display sets
-    const currentLayerIds = currentDisplaySetIds.length > 0
-      ? allStudyLayers
-        .filter(layer => {
-          const layerDisplaySetId = layer.displaySetId;
-          return layerDisplaySetId && currentDisplaySetIds.includes(layerDisplaySetId);
-        })
-        .map(layer => layer.id)
-      : [];
+    const currentLayerIds =
+      currentDisplaySetIds.length > 0
+        ? allStudyLayers
+            .filter(layer => {
+              const layerDisplaySetId = layer.displaySetId;
+              return layerDisplaySetId && currentDisplaySetIds.includes(layerDisplaySetId);
+            })
+            .map(layer => layer.id)
+        : [];
 
     // Get current enabled state from ref
     const currentEnabled = enabledRef.current;
@@ -240,7 +264,9 @@ function ViewportAIOverlaysMenu({
 
   // Detect base imageId for the viewport
   useEffect(() => {
-    if (!viewportId) return;
+    if (!viewportId) {
+      return;
+    }
 
     const checkViewport = () => {
       const vp = cornerstoneViewportService.getCornerstoneViewport(viewportId);
@@ -250,7 +276,7 @@ function ViewportAIOverlaysMenu({
       }
 
       const updateImageId = () => {
-        const curr = vp?.getCurrentImageId?.();
+        const curr = (vp as { getCurrentImageId?: () => string })?.getCurrentImageId?.();
         if (curr) {
           setBaseImageId(curr);
         }
@@ -258,13 +284,14 @@ function ViewportAIOverlaysMenu({
 
       updateImageId();
 
-      const element = vp.element;
+      const element = (vp as { element?: HTMLElement }).element;
+      const events = Enums.Events as Record<string, string>;
       if (element) {
-        element.addEventListener(Enums.Events.IMAGE_RENDERED, updateImageId);
-        element.addEventListener(Enums.Events.NEW_IMAGE_SET, updateImageId);
+        element.addEventListener(events.IMAGE_RENDERED ?? 'IMAGE_RENDERED', updateImageId);
+        element.addEventListener(events.NEW_IMAGE_SET ?? 'NEW_IMAGE_SET', updateImageId);
         return () => {
-          element.removeEventListener(Enums.Events.IMAGE_RENDERED, updateImageId);
-          element.removeEventListener(Enums.Events.NEW_IMAGE_SET, updateImageId);
+          element.removeEventListener(events.IMAGE_RENDERED ?? 'IMAGE_RENDERED', updateImageId);
+          element.removeEventListener(events.NEW_IMAGE_SET ?? 'NEW_IMAGE_SET', updateImageId);
         };
       }
     };
@@ -307,7 +334,9 @@ function ViewportAIOverlaysMenu({
     setEnabled(prev => {
       const next = { ...prev, [layerId]: !prev[layerId] };
       const layer = layers.find(l => l.id === layerId);
-      if (!layer || !viewportId || !baseImageId) return next;
+      if (!layer || !viewportId || !baseImageId) {
+        return next;
+      }
       if (next[layerId]) {
         // Enable: add and show overlay
         if (!overlay.hasLayer?.()(viewportId, layerId)) {
@@ -337,7 +366,10 @@ function ViewportAIOverlaysMenu({
   const hasDiagnosisData = studyUID ? diagnosisStore.hasDiagnoses(studyUID) : false;
 
   return (
-    <Popover open={isOpen} onOpenChange={handleOpenChange}>
+    <Popover
+      open={isOpen}
+      onOpenChange={handleOpenChange}
+    >
       <PopoverTrigger
         asChild
         className={cn('flex items-center justify-center')}
@@ -357,7 +389,7 @@ function ViewportAIOverlaysMenu({
               variant="ghost"
               size="icon"
               disabled={disabled}
-              onClick={() => { }}
+              onClick={() => {}}
             >
               {Icon}
             </Button>
@@ -365,12 +397,12 @@ function ViewportAIOverlaysMenu({
         </div>
       </PopoverTrigger>
       <PopoverContent
-        className="h-auto w-[250px] max-h-[400px] overflow-y-auto flex-shrink-0 flex-col items-start rounded p-1"
+        className="h-auto max-h-[400px] w-[250px] flex-shrink-0 flex-col items-start overflow-y-auto rounded p-1"
         align={align}
         side={side}
         style={{
-          background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
-          left: 0
+          background: 'linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)',
+          left: 0,
         }}
       >
         {layers.length === 0 ? (

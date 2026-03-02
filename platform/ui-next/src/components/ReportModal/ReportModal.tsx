@@ -14,7 +14,7 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resolvedReportPath, setResolvedReportPath] = useState<string | null>(null);
-  const [parsedData, setParsedData] = useState<any>(null);
+  const [parsedData, setParsedData] = useState<unknown>(null);
 
   const parseMaybeJson = async (response: Response) => {
     const contentType = response.headers.get('content-type') ?? '';
