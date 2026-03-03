@@ -377,7 +377,15 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
 
   const handleDownloadReport = async () => {
     try {
-      const response = await fetch(`/api/diagnosis/${diagnosisId}/report/pdf`, {
+      const config = (window as Window & { config?: { reportApiBaseUrl?: string } }).config;
+      const baseUrl =
+        typeof config?.reportApiBaseUrl === 'string'
+          ? config.reportApiBaseUrl.replace(/\/$/, '')
+          : '';
+      const pdfUrl = baseUrl
+        ? `${baseUrl}/api/diagnosis/${diagnosisId}/report/pdf`
+        : `/api/diagnosis/${diagnosisId}/report/pdf`;
+      const response = await fetch(pdfUrl, {
         method: 'GET',
         headers: getAuthHeaders(),
       });
