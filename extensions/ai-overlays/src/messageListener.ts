@@ -242,7 +242,8 @@ async function processDiagnoses(
     // Get the current image ID for this diagnosis (if available)
     const targetStudyUID = diagnosis.study_uid || studyUID;
 
-    // Find viewports showing this study
+    // Find viewports that are showing this study AND the current image is this diagnosis's instance
+    const instanceUID = diagnosis.dicom_instance_uid;
     const relevantViewports = viewportIds.filter((viewportId: string) => {
       try {
         const viewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
@@ -255,8 +256,12 @@ async function processDiagnoses(
           return false;
         }
 
+        // Require current image to be this diagnosis's instance (per-image overlays)
+        if (instanceUID && !currentImageId.includes(instanceUID)) {
+          return false;
+        }
+
         // Check if this viewport is showing the study
-        // Simple check: see if the study UID is in the image ID
         if (targetStudyUID && currentImageId.includes(targetStudyUID)) {
           return true;
         }
@@ -280,8 +285,8 @@ async function processDiagnoses(
     console.log(
       '[AI Overlays] Found',
       relevantViewports.length,
-      'viewports for study',
-      targetStudyUID
+      'viewports for diagnosis instance',
+      instanceUID
     );
 
     // Load overlays into each relevant viewport

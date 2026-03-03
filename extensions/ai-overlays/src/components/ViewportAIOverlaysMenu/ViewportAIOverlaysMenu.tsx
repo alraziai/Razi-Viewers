@@ -21,6 +21,7 @@ type LayerDef = {
   defaultOpacity?: number;
   color?: string;
   displaySetId?: string;
+  instanceUID?: string;
   studyUID?: string;
   diagnosisId?: number;
   imageType?: string;
@@ -55,6 +56,7 @@ function ViewportAIOverlaysMenu({
   const [studyUID, setStudyUID] = useState<string | null>(null);
   const [currentDisplaySetIds, setCurrentDisplaySetIds] = useState<string[]>([]);
   const prevDisplaySetIdsRef = useRef<string[]>([]);
+  const prevBaseImageIdRef = useRef<string | null>(null);
   const enabledRef = useRef<Record<string, boolean>>({});
 
   // Subscribe to diagnosis store changes and update layers
@@ -178,56 +180,72 @@ function ViewportAIOverlaysMenu({
     };
   }, [viewportId, viewportGridService, displaySetService]);
 
-  // Filter layers to only show those for current display sets
+  // Filter layers to only show those for current display sets and current instance (image)
   useEffect(() => {
     if (currentDisplaySetIds.length === 0) {
       setLayers([]);
       return;
     }
 
-    // Filter layers to only include those matching current display set IDs or series UIDs
-    const filteredLayers = allStudyLayers.filter(layer => {
+    // Filter by display set / series first
+    const byDisplaySet = allStudyLayers.filter(layer => {
       const layerDisplaySetId = layer.displaySetId;
       return layerDisplaySetId && currentDisplaySetIds.includes(layerDisplaySetId);
     });
 
+    // Then filter by current instance: only show layers for the image currently displayed
+    // (baseImageId typically contains the SOP Instance UID / dicom_instance_uid)
+    const filteredLayers =
+      baseImageId && byDisplaySet.some(l => l.instanceUID)
+        ? byDisplaySet.filter(
+            layer =>
+              !layer.instanceUID || baseImageId.includes(layer.instanceUID)
+          )
+        : byDisplaySet;
+
     console.log(
-      '[AI Overlays Menu] Filtered layers for current display sets:',
+      '[AI Overlays Menu] Filtered layers for current display sets and instance:',
       filteredLayers.length
     );
     setLayers(filteredLayers);
-  }, [allStudyLayers, currentDisplaySetIds]);
+  }, [allStudyLayers, currentDisplaySetIds, baseImageId]);
 
   // Keep enabledRef in sync with enabled state
   useEffect(() => {
     enabledRef.current = enabled;
   }, [enabled]);
 
-  // Automatically uncheck and hide layers from previous display set when switching
+  // Automatically uncheck and hide layers from previous display set or instance when switching
   useEffect(() => {
     if (!viewportId || allStudyLayers.length === 0) {
       return;
     }
 
-    // Check if display set IDs actually changed
+    // Check if display set IDs or current image (instance) changed
     const displaySetIdsChanged =
       prevDisplaySetIdsRef.current.length !== currentDisplaySetIds.length ||
       prevDisplaySetIdsRef.current.some((id, idx) => id !== currentDisplaySetIds[idx]);
+    const instanceChanged = prevBaseImageIdRef.current !== baseImageId;
 
-    if (!displaySetIdsChanged) {
+    if (!displaySetIdsChanged && !instanceChanged) {
       return;
     }
 
-    // Update ref
     prevDisplaySetIdsRef.current = [...currentDisplaySetIds];
+    prevBaseImageIdRef.current = baseImageId;
 
-    // Get IDs of layers that belong to current display sets
+    // Get IDs of layers that belong to current display sets and current instance
     const currentLayerIds =
       currentDisplaySetIds.length > 0
         ? allStudyLayers
             .filter(layer => {
-              const layerDisplaySetId = layer.displaySetId;
-              return layerDisplaySetId && currentDisplaySetIds.includes(layerDisplaySetId);
+              const matchesDisplaySet =
+                layer.displaySetId && currentDisplaySetIds.includes(layer.displaySetId);
+              const matchesInstance =
+                !layer.instanceUID ||
+                !baseImageId ||
+                baseImageId.includes(layer.instanceUID);
+              return matchesDisplaySet && matchesInstance;
             })
             .map(layer => layer.id)
         : [];
@@ -260,7 +278,7 @@ function ViewportAIOverlaysMenu({
       });
       return updated;
     });
-  }, [currentDisplaySetIds, allStudyLayers, viewportId, overlay]);
+  }, [currentDisplaySetIds, baseImageId, allStudyLayers, viewportId, overlay]);
 
   // Detect base imageId for the viewport
   useEffect(() => {

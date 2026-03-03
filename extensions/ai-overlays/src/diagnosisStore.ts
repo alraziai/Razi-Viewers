@@ -42,6 +42,7 @@ type LayerDef = {
   defaultOpacity?: number;
   color?: string;
   displaySetId?: string;
+  instanceUID?: string;
   studyUID?: string;
   diagnosisId?: number;
   imageType?: string;
@@ -127,7 +128,7 @@ class DiagnosisStore {
         continue;
       }
 
-      // Use series_uid or dicom_instance_uid as display set identifier
+      // Use series_uid for display set scope; dicom_instance_uid for per-instance filtering
       const displaySetId = diagnosis.series_uid || diagnosis.dicom_instance_uid;
 
       for (const diagImage of diagnosis.diagnosis_images) {
@@ -150,6 +151,7 @@ class DiagnosisStore {
           defaultOpacity: this.getDefaultOpacity(diagImage.type),
           color,
           displaySetId,
+          instanceUID: diagnosis.dicom_instance_uid,
           studyUID,
           diagnosisId: diagnosis.id,
           imageType: diagImage.type,
