@@ -39,6 +39,41 @@ export function getDisplaySetIdentifier(displaySet: DisplaySetLike): string {
 }
 
 /**
+ * Extract SOP Instance UID from a Cornerstone/OHIF imageId.
+ * Used to match the current viewport image to diagnosis layers (dicom_instance_uid).
+ */
+export function getInstanceUIDFromImageId(imageId: string): string | null {
+  if (!imageId || typeof imageId !== 'string') {
+    return null;
+  }
+  // wadors:https://.../studies/StudyUID/series/SeriesUID/instances/SOPInstanceUID/frames/...
+  if (imageId.startsWith('wadors:')) {
+    const afterInstances = imageId.split('/instances/')[1];
+    if (afterInstances) {
+      const uid = afterInstances.split('/')[0].split('?')[0];
+      return uid || null;
+    }
+    const stripped = imageId.split('/studies/')[1];
+    if (stripped) {
+      const parts = stripped.split('/');
+      return parts[4] || null; // StudyUID, 'series', SeriesUID, 'instances', SOPInstanceUID
+    }
+    return null;
+  }
+  // WADO query string: ...?studyUID=...&seriesUID=...&objectUID=SOPInstanceUID
+  if (imageId.includes('requestType=WADO') || imageId.includes('objectUID=')) {
+    const match = imageId.match(/objectUID=([^&]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+  // Any URL path containing /instances/UID
+  const instancesMatch = imageId.match(/\/instances\/([^/?&#]+)/);
+  if (instancesMatch) {
+    return decodeURIComponent(instancesMatch[1]);
+  }
+  return null;
+}
+
+/**
  * Generate a unique color for a data overlay's heatmap or mask
  * Uses a hash function to generate consistent colors based on display set ID and layer type
  */

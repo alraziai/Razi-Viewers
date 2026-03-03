@@ -10,6 +10,7 @@
 import type { ServicesManager } from '@ohif/core';
 import { createOverlayService } from './overlayService';
 import { diagnosisStore } from './diagnosisStore';
+import { getInstanceUIDFromImageId } from './utils/studyOverlays';
 import { decrypt } from '../../../platform/ui-next/src/lib/crypto';
 
 type DiagnosisMessage = {
@@ -257,8 +258,13 @@ async function processDiagnoses(
         }
 
         // Require current image to be this diagnosis's instance (per-image overlays)
-        if (instanceUID && !currentImageId.includes(instanceUID)) {
-          return false;
+        const viewportInstanceUID = getInstanceUIDFromImageId(currentImageId);
+        if (instanceUID) {
+          if (viewportInstanceUID) {
+            if (viewportInstanceUID !== instanceUID) return false;
+          } else {
+            if (!currentImageId.includes(instanceUID)) return false;
+          }
         }
 
         // Check if this viewport is showing the study

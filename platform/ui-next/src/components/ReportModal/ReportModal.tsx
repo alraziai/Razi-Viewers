@@ -15,6 +15,7 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
   const [error, setError] = useState<string | null>(null);
   const [resolvedReportPath, setResolvedReportPath] = useState<string | null>(null);
   const [parsedData, setParsedData] = useState<unknown>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const parseMaybeJson = async (response: Response) => {
     const contentType = response.headers.get('content-type') ?? '';
@@ -376,6 +377,7 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
   };
 
   const handleDownloadReport = async () => {
+    setIsDownloading(true);
     try {
       const config = (window as Window & { config?: { reportApiBaseUrl?: string } }).config;
       const baseUrl =
@@ -399,6 +401,8 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
     } catch (err) {
       console.error('Report download failed:', err);
       alert(err instanceof Error ? err.message : 'Failed to download report');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -423,9 +427,14 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
           <div className="flex items-center gap-2">
             <button
               onClick={handleDownloadReport}
-              className="rounded-lg p-2 text-white/60 transition-colors ease-in-out duration-200 hover:bg-white/10 hover:text-white cursor-pointer"
+              disabled={isDownloading}
+              className="rounded-lg p-2 text-white/60 transition-colors ease-in-out duration-200 hover:bg-white/10 hover:text-white cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <Icons.Download className="w-5 h-5" />
+              {isDownloading ? (
+                <Icons.LoadingSpinner className="w-5 h-5" />
+              ) : (
+                <Icons.Download className="w-5 h-5" />
+              )}
             </button>
             <button
               onClick={handleClose}

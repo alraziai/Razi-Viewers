@@ -11,7 +11,7 @@ import {
 import { useSystem } from '@ohif/core';
 import { Enums } from '@cornerstonejs/core';
 import { createOverlayService } from '../../overlayService';
-import { getViewportStudyUID, getDisplaySetIdentifier } from '../../utils/studyOverlays';
+import { getViewportStudyUID, getDisplaySetIdentifier, getInstanceUIDFromImageId } from '../../utils/studyOverlays';
 import { diagnosisStore } from '../../diagnosisStore';
 
 type LayerDef = {
@@ -194,13 +194,17 @@ function ViewportAIOverlaysMenu({
     });
 
     // Then filter by current instance: only show layers for the image currently displayed
-    // (baseImageId typically contains the SOP Instance UID / dicom_instance_uid)
+    // Prefer exact SOP Instance UID from imageId when available; fallback to string includes
+    const currentInstanceUID = baseImageId ? getInstanceUIDFromImageId(baseImageId) : null;
     const filteredLayers =
       baseImageId && byDisplaySet.some(l => l.instanceUID)
-        ? byDisplaySet.filter(
-            layer =>
-              !layer.instanceUID || baseImageId.includes(layer.instanceUID)
-          )
+        ? byDisplaySet.filter(layer => {
+            if (!layer.instanceUID) return true;
+            if (currentInstanceUID) {
+              return layer.instanceUID === currentInstanceUID;
+            }
+            return baseImageId.includes(layer.instanceUID);
+          })
         : byDisplaySet;
 
     console.log(
@@ -235,16 +239,20 @@ function ViewportAIOverlaysMenu({
     prevBaseImageIdRef.current = baseImageId;
 
     // Get IDs of layers that belong to current display sets and current instance
+    const currentInstanceUID = baseImageId ? getInstanceUIDFromImageId(baseImageId) : null;
     const currentLayerIds =
       currentDisplaySetIds.length > 0
         ? allStudyLayers
             .filter(layer => {
               const matchesDisplaySet =
                 layer.displaySetId && currentDisplaySetIds.includes(layer.displaySetId);
-              const matchesInstance =
-                !layer.instanceUID ||
-                !baseImageId ||
-                baseImageId.includes(layer.instanceUID);
+              const matchesInstance = !layer.instanceUID
+                ? true
+                : currentInstanceUID
+                  ? layer.instanceUID === currentInstanceUID
+                  : baseImageId
+                    ? baseImageId.includes(layer.instanceUID)
+                    : false;
               return matchesDisplaySet && matchesInstance;
             })
             .map(layer => layer.id)
