@@ -1,4 +1,5 @@
 /** @type {AppTypes.Config} */
+// @ts-expect-error - config is set on window at runtime by the app
 window.config = {
   routerBasename: null,
   extensions: ['@ohif/extension-ai-overlays'],
@@ -68,7 +69,7 @@ window.config = {
   ],
   httpErrorHandler: error => {
     // This is 429 when rejected from the public idc sandbox too often.
-    console.warn(error.status);
+    console.warn(/** @type {{ status?: number }} */ (error).status);
 
     // Could use services manager here to bring up a dialog/modal if needed.
     console.warn('test, navigate to https://ohif.org/');

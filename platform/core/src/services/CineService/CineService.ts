@@ -13,7 +13,14 @@ class CineService extends PubSubService {
     },
   };
 
-  serviceImplementation = {};
+  serviceImplementation: {
+    _getState?: () => unknown;
+    _setCine?: (opts: { id: string; frameRate?: number; isPlaying?: boolean }) => void;
+    _setIsCineEnabled?: (enabled: boolean) => void;
+    _playClip?: (element: unknown, options: unknown) => unknown;
+    _stopClip?: (element: unknown, options: unknown) => unknown;
+    _getSyncedViewports?: (viewportId: string) => unknown;
+  } = {};
   startedClips = new Map();
   closedViewports = new Set();
 
@@ -23,15 +30,15 @@ class CineService extends PubSubService {
   }
 
   public getState() {
-    return this.serviceImplementation._getState();
+    return this.serviceImplementation._getState?.();
   }
 
   public setCine({ id, frameRate, isPlaying }) {
-    return this.serviceImplementation._setCine({ id, frameRate, isPlaying });
+    return this.serviceImplementation._setCine?.({ id, frameRate, isPlaying });
   }
 
   public setIsCineEnabled(isCineEnabled) {
-    this.serviceImplementation._setIsCineEnabled(isCineEnabled);
+    this.serviceImplementation._setIsCineEnabled?.(isCineEnabled);
     // Todo: for some reason i need to do this setTimeout since the
     // reducer state does not get updated right away and if we publish the
     // event and we use the cineService.getState() it will return the old state
@@ -47,7 +54,7 @@ class CineService extends PubSubService {
   }
 
   public playClip(element, playClipOptions) {
-    const res = this.serviceImplementation._playClip(element, playClipOptions);
+    const res = this.serviceImplementation._playClip?.(element, playClipOptions);
 
     this.startedClips.set(element, playClipOptions);
 
@@ -57,7 +64,7 @@ class CineService extends PubSubService {
   }
 
   public stopClip(element, stopClipOptions) {
-    const res = this.serviceImplementation._stopClip(element, stopClipOptions);
+    const res = this.serviceImplementation._stopClip?.(element, stopClipOptions);
 
     this._broadcastEvent(this.EVENTS.CINE_STATE_CHANGED, { isPlaying: false });
 
@@ -72,7 +79,7 @@ class CineService extends PubSubService {
   }
 
   public getSyncedViewports(viewportId) {
-    return this.serviceImplementation._getSyncedViewports(viewportId);
+    return this.serviceImplementation._getSyncedViewports?.(viewportId);
   }
 
   public setViewportCineClosed(viewportId) {

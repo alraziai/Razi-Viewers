@@ -47,7 +47,7 @@ function Header({
   Secondary,
   ...props
 }: HeaderProps): ReactNode {
-  const [authState] = useUserAuthentication();
+  const [authState] = useUserAuthentication() as unknown as [{ user?: { firstName?: string; lastName?: string; name?: string; email?: string }; enabled: boolean }, unknown];
   const user = authState?.user;
   const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
 
