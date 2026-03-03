@@ -1,16 +1,19 @@
 /**
  * PM2 ecosystem file for running Razi Viewers in production.
  *
- * Usage:
- *   1. Build the app:    yarn build
- *   2. Start with PM2:   pm2 start ecosystem.config.cjs
- *   3. Save process list: pm2 save && pm2 startup  (optional, for reboot persistence)
+ * Deploy steps (after git pull):
+ *   1. From repo root:  cd /path/to/Razi-Viewers
+ *   2. Install deps:   yarn install
+ *   3. Clean + build:   yarn build:production   (or yarn build:production:lowmem on small VMs)
+ *      - If build finishes in ~1 second, you are in the wrong directory or cache is stale.
+ *      - Run: rm -rf platform/app/dist node_modules/.cache && yarn build
+ *   4. Restart app:     pm2 restart razi-viewer
+ *   5. Verify:          ls -la platform/app/dist  (files should have current timestamp)
  *
  * Other commands:
  *   pm2 status          - list processes
  *   pm2 logs            - view logs
- *   pm2 restart all     - restart the app
- *   pm2 stop all        - stop the app
+ *   pm2 restart all      - restart the app
  */
 module.exports = {
   apps: [

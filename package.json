@@ -26,6 +26,8 @@
     "cm": "npx git-cz",
     "build": "lerna run build:viewer --stream",
     "build:lowmem": "cross-env LOW_MEMORY=1 lerna run build:viewer --stream",
+    "build:production": "yarn clean && yarn build",
+    "build:production:lowmem": "yarn clean && yarn build:lowmem",
     "build:dev": "lerna run build:dev --stream",
     "build:ci": "lerna run build:viewer:ci --stream",
     "build:qa": "lerna run build:viewer:qa --stream",
