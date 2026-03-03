@@ -375,9 +375,23 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
     }
   };
 
-  const handleDownloadReport = () => {
-    // TODO: Implement report download
-    console.log('Downloading report...');
+  const handleDownloadReport = async () => {
+    try {
+      const response = await fetch(`/api/diagnosis/${diagnosisId}/report/pdf`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to download report: ${response.status} ${response.statusText}`);
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      console.error('Report download failed:', err);
+      alert(err instanceof Error ? err.message : 'Failed to download report');
+    }
   };
 
   if (!isOpen) return null;
@@ -403,7 +417,7 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
               onClick={handleDownloadReport}
               className="rounded-lg p-2 text-white/60 transition-colors ease-in-out duration-200 hover:bg-white/10 hover:text-white cursor-pointer"
             >
-              <Icons.ByName name="download" className="w-5 h-5" />
+              <Icons.Download className="w-5 h-5" />
             </button>
             <button
               onClick={handleClose}
@@ -423,7 +437,7 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-64 gap-4">
-              <Icons.ByName name="status-alert" className="w-12 h-12 text-red-500" />
+              <Icons.StatusError className="w-12 h-12 text-red-500" />
               <p className="text-red-400">{String(error)}</p>
               <Button onClick={fetchReport} variant="ghost">
                 Retry

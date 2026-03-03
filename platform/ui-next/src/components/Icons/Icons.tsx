@@ -14,6 +14,7 @@ import DisplayFillAndOutline from './Sources/DisplayFillAndOutline';
 import DisplayFillOnly from './Sources/DisplayFillOnly';
 import DisplayOutlineOnly from './Sources/DisplayOutlineOnly';
 import Download from './Sources/Download';
+import DownloadCloud from './Sources/DownloadCloud';
 import Export from './Sources/Export';
 import EyeHidden from './Sources/EyeHidden';
 import EyeVisible from './Sources/EyeVisible';
@@ -496,6 +497,7 @@ export const Icons = {
   FillOnly: DisplayFillOnly,
   OutlineOnly: DisplayOutlineOnly,
   Download,
+  DownloadCloud,
   Export,
   EyeHidden,
   EyeVisible,
