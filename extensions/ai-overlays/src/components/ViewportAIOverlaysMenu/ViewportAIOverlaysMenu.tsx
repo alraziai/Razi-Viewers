@@ -194,18 +194,23 @@ function ViewportAIOverlaysMenu({
     });
 
     // Then filter by current instance: only show layers for the image currently displayed
-    // Prefer exact SOP Instance UID from imageId when available; fallback to string includes
+    // When baseImageId is unknown, show NO instance-specific layers (avoid showing all 10)
     const currentInstanceUID = baseImageId ? getInstanceUIDFromImageId(baseImageId) : null;
-    const filteredLayers =
-      baseImageId && byDisplaySet.some(l => l.instanceUID)
-        ? byDisplaySet.filter(layer => {
-            if (!layer.instanceUID) return true;
-            if (currentInstanceUID) {
-              return layer.instanceUID === currentInstanceUID;
-            }
-            return baseImageId.includes(layer.instanceUID);
-          })
-        : byDisplaySet;
+    const hasInstanceLayers = byDisplaySet.some(l => l.instanceUID);
+    let filteredLayers: LayerDef[];
+    if (!baseImageId && hasInstanceLayers) {
+      filteredLayers = [];
+    } else if (baseImageId && hasInstanceLayers) {
+      filteredLayers = byDisplaySet.filter(layer => {
+        if (!layer.instanceUID) return true;
+        if (currentInstanceUID) {
+          return layer.instanceUID === currentInstanceUID;
+        }
+        return baseImageId.includes(layer.instanceUID);
+      });
+    } else {
+      filteredLayers = byDisplaySet;
+    }
 
     console.log(
       '[AI Overlays Menu] Filtered layers for current display sets and instance:',
@@ -326,34 +331,33 @@ function ViewportAIOverlaysMenu({
   }, [viewportId, cornerstoneViewportService]);
 
   // Apply overlays on enable/viewport change
+  // Do NOT call removeAll when baseImageId is null (causes black screen during image switch)
   useEffect(() => {
-    if (!viewportId || !baseImageId) {
-      if (viewportId) {
-        overlay.removeAll(viewportId);
-      }
+    if (!viewportId) {
+      return;
+    }
+    if (!baseImageId) {
       return;
     }
 
     const timeoutId = setTimeout(async () => {
       for (const layer of layers) {
-        if (layer.file) {
-          const layerExists = overlay.hasLayer?.()(viewportId, layer.id);
+        if (!layer.file) continue;
+        const layerExists = overlay.hasLayer?.()(viewportId, layer.id);
+        if (enabled[layer.id]) {
           if (!layerExists) {
-            console.log('[AI Overlays Menu] Adding layer:', layer.id, layer.file);
             await overlay.addLayer(viewportId, layer, baseImageId);
           }
-          if (enabled[layer.id]) {
-            overlay.show?.()(viewportId, layer.id);
-          } else {
+          overlay.show?.()(viewportId, layer.id);
+        } else {
+          if (layerExists) {
             overlay.removeLayer?.()(viewportId, layer.id);
           }
         }
       }
     }, 100);
 
-    return () => {
-      clearTimeout(timeoutId);
-    };
+    return () => clearTimeout(timeoutId);
   }, [viewportId, baseImageId, layers, enabled, overlay]);
 
   const handleToggle = (layerId: string) => {
