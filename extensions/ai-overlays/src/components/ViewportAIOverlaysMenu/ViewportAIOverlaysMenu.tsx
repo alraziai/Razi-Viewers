@@ -302,6 +302,8 @@ function ViewportAIOverlaysMenu({
   }, [currentDisplaySetIds, baseImageId, allStudyLayers, viewportId, overlay]);
 
   // Detect base imageId for the viewport
+  // Uses both event listeners AND polling as fallback since some Cornerstone events
+  // may not fire reliably when scrolling between images in a stack viewport.
   useEffect(() => {
     if (!viewportId) {
       return;
@@ -309,6 +311,8 @@ function ViewportAIOverlaysMenu({
 
     let cleanupFn: (() => void) | null = null;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let lastSeenImageId: string | null = null;
 
     const setupViewport = () => {
       const vp = cornerstoneViewportService.getCornerstoneViewport(viewportId);
@@ -319,45 +323,50 @@ function ViewportAIOverlaysMenu({
 
       const updateImageId = () => {
         const curr = (vp as { getCurrentImageId?: () => string })?.getCurrentImageId?.();
-        if (curr) {
-          setBaseImageId(prev => {
-            if (prev !== curr) {
-              const uid = getInstanceUIDFromImageId(curr);
-              console.log('[AI Overlays Menu] baseImageId changed:', { instanceUID: uid, imageId: curr.substring(0, 80) });
-            }
-            return curr;
-          });
+        if (curr && curr !== lastSeenImageId) {
+          lastSeenImageId = curr;
+          const uid = getInstanceUIDFromImageId(curr);
+          console.log('[AI Overlays Menu] baseImageId changed:', { instanceUID: uid, imageId: curr.substring(0, 100) });
+          setBaseImageId(curr);
         }
       };
 
       updateImageId();
 
+      // Event-based detection
       const element = (vp as { element?: HTMLElement }).element;
       const events = Enums.Events as Record<string, string>;
       if (element) {
-        const imageRendered = events.IMAGE_RENDERED ?? 'IMAGE_RENDERED';
-        const stackNewImage = events.STACK_NEW_IMAGE ?? 'STACK_NEW_IMAGE';
-        const stackViewportScroll = events.STACK_VIEWPORT_SCROLL ?? 'STACK_VIEWPORT_SCROLL';
-        const newImageSet = events.NEW_IMAGE_SET ?? 'NEW_IMAGE_SET';
+        const eventNames = [
+          events.IMAGE_RENDERED,
+          events.STACK_NEW_IMAGE,
+          events.STACK_VIEWPORT_SCROLL,
+          events.NEW_IMAGE_SET,
+          events.CAMERA_MODIFIED,
+          'CORNERSTONE_STACK_NEW_IMAGE',
+          'cornerstonenewimage',
+        ].filter(Boolean);
 
-        element.addEventListener(imageRendered, updateImageId);
-        element.addEventListener(stackNewImage, updateImageId);
-        element.addEventListener(stackViewportScroll, updateImageId);
-        element.addEventListener(newImageSet, updateImageId);
+        for (const evt of eventNames) {
+          element.addEventListener(evt, updateImageId);
+        }
 
         cleanupFn = () => {
-          element.removeEventListener(imageRendered, updateImageId);
-          element.removeEventListener(stackNewImage, updateImageId);
-          element.removeEventListener(stackViewportScroll, updateImageId);
-          element.removeEventListener(newImageSet, updateImageId);
+          for (const evt of eventNames) {
+            element.removeEventListener(evt, updateImageId);
+          }
         };
       }
+
+      // Polling fallback: check every 500ms if the current image changed
+      pollTimer = setInterval(updateImageId, 500);
     };
 
     setupViewport();
 
     return () => {
       if (retryTimer) clearTimeout(retryTimer);
+      if (pollTimer) clearInterval(pollTimer);
       cleanupFn?.();
     };
   }, [viewportId, cornerstoneViewportService]);
