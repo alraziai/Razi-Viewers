@@ -197,6 +197,14 @@ function ViewportAIOverlaysMenu({
     // When baseImageId is unknown, show NO instance-specific layers (avoid showing all 10)
     const currentInstanceUID = baseImageId ? getInstanceUIDFromImageId(baseImageId) : null;
     const hasInstanceLayers = byDisplaySet.some(l => l.instanceUID);
+
+    console.log('[AI Overlays Menu] Instance filter debug:', {
+      baseImageId: baseImageId ? baseImageId.substring(0, 80) + '...' : null,
+      currentInstanceUID,
+      hasInstanceLayers,
+      layerInstanceUIDs: [...new Set(byDisplaySet.map(l => l.instanceUID))],
+    });
+
     let filteredLayers: LayerDef[];
     if (!baseImageId && hasInstanceLayers) {
       filteredLayers = [];
@@ -299,17 +307,26 @@ function ViewportAIOverlaysMenu({
       return;
     }
 
-    const checkViewport = () => {
+    let cleanupFn: (() => void) | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const setupViewport = () => {
       const vp = cornerstoneViewportService.getCornerstoneViewport(viewportId);
       if (!vp) {
-        setTimeout(checkViewport, 100);
+        retryTimer = setTimeout(setupViewport, 200);
         return;
       }
 
       const updateImageId = () => {
         const curr = (vp as { getCurrentImageId?: () => string })?.getCurrentImageId?.();
         if (curr) {
-          setBaseImageId(curr);
+          setBaseImageId(prev => {
+            if (prev !== curr) {
+              const uid = getInstanceUIDFromImageId(curr);
+              console.log('[AI Overlays Menu] baseImageId changed:', { instanceUID: uid, imageId: curr.substring(0, 80) });
+            }
+            return curr;
+          });
         }
       };
 
@@ -318,16 +335,31 @@ function ViewportAIOverlaysMenu({
       const element = (vp as { element?: HTMLElement }).element;
       const events = Enums.Events as Record<string, string>;
       if (element) {
-        element.addEventListener(events.IMAGE_RENDERED ?? 'IMAGE_RENDERED', updateImageId);
-        element.addEventListener(events.NEW_IMAGE_SET ?? 'NEW_IMAGE_SET', updateImageId);
-        return () => {
-          element.removeEventListener(events.IMAGE_RENDERED ?? 'IMAGE_RENDERED', updateImageId);
-          element.removeEventListener(events.NEW_IMAGE_SET ?? 'NEW_IMAGE_SET', updateImageId);
+        const imageRendered = events.IMAGE_RENDERED ?? 'IMAGE_RENDERED';
+        const stackNewImage = events.STACK_NEW_IMAGE ?? 'STACK_NEW_IMAGE';
+        const stackViewportScroll = events.STACK_VIEWPORT_SCROLL ?? 'STACK_VIEWPORT_SCROLL';
+        const newImageSet = events.NEW_IMAGE_SET ?? 'NEW_IMAGE_SET';
+
+        element.addEventListener(imageRendered, updateImageId);
+        element.addEventListener(stackNewImage, updateImageId);
+        element.addEventListener(stackViewportScroll, updateImageId);
+        element.addEventListener(newImageSet, updateImageId);
+
+        cleanupFn = () => {
+          element.removeEventListener(imageRendered, updateImageId);
+          element.removeEventListener(stackNewImage, updateImageId);
+          element.removeEventListener(stackViewportScroll, updateImageId);
+          element.removeEventListener(newImageSet, updateImageId);
         };
       }
     };
 
-    checkViewport();
+    setupViewport();
+
+    return () => {
+      if (retryTimer) clearTimeout(retryTimer);
+      cleanupFn?.();
+    };
   }, [viewportId, cornerstoneViewportService]);
 
   // Apply overlays on enable/viewport change

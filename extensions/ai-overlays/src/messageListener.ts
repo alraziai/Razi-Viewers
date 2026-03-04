@@ -210,8 +210,14 @@ async function processDiagnoses(
     console.log('[AI Overlays] Stored', diagnoses.length, 'diagnoses for study', studyUID);
   }
 
-  // Get all active viewports
-  const gridState = viewportGridService.getState();
+  // Get all active viewports — services may not be initialized yet
+  let gridState;
+  try {
+    gridState = viewportGridService.getState();
+  } catch {
+    console.warn('[AI Overlays] viewportGridService not ready yet, skipping viewport matching (data is in diagnosisStore)');
+    return;
+  }
   console.log('[AI Overlays] Grid state:', gridState);
 
   // Handle different viewport grid state structures
