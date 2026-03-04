@@ -314,22 +314,44 @@ function ViewportAIOverlaysMenu({
     let pollTimer: ReturnType<typeof setInterval> | null = null;
     let lastSeenImageId: string | null = null;
 
+    // Always get a fresh viewport reference to avoid stale closures
+    const getViewport = () => cornerstoneViewportService.getCornerstoneViewport(viewportId);
+
+    const updateImageId = () => {
+      const freshVp = getViewport();
+      if (!freshVp) return;
+
+      // Try getCurrentImageId() first
+      let curr = (freshVp as { getCurrentImageId?: () => string })?.getCurrentImageId?.();
+
+      // Fallback: read imageIds[currentImageIdIndex] for stack viewports
+      if (!curr) {
+        const vpAny = freshVp as {
+          currentImageIdIndex?: number;
+          imageIds?: string[];
+          getImageIds?: () => string[];
+        };
+        const ids = vpAny.imageIds ?? vpAny.getImageIds?.();
+        const idx = vpAny.currentImageIdIndex;
+        if (ids && typeof idx === 'number' && ids[idx]) {
+          curr = ids[idx];
+        }
+      }
+
+      if (curr && curr !== lastSeenImageId) {
+        lastSeenImageId = curr;
+        const uid = getInstanceUIDFromImageId(curr);
+        console.log('[AI Overlays Menu] baseImageId changed:', { instanceUID: uid, imageId: curr.substring(0, 120) });
+        setBaseImageId(curr);
+      }
+    };
+
     const setupViewport = () => {
-      const vp = cornerstoneViewportService.getCornerstoneViewport(viewportId);
+      const vp = getViewport();
       if (!vp) {
         retryTimer = setTimeout(setupViewport, 200);
         return;
       }
-
-      const updateImageId = () => {
-        const curr = (vp as { getCurrentImageId?: () => string })?.getCurrentImageId?.();
-        if (curr && curr !== lastSeenImageId) {
-          lastSeenImageId = curr;
-          const uid = getInstanceUIDFromImageId(curr);
-          console.log('[AI Overlays Menu] baseImageId changed:', { instanceUID: uid, imageId: curr.substring(0, 100) });
-          setBaseImageId(curr);
-        }
-      };
 
       updateImageId();
 
