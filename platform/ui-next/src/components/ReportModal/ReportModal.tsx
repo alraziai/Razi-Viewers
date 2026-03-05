@@ -124,17 +124,8 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
       const response = await fetch(reportPath, {
         method: 'GET',
         headers: getAuthHeaders(),
-        redirect: 'manual',
       });
 
-      if (response.type === 'opaqueredirect' || response.status === 301 || response.status === 302) {
-        setError('Session expired or unauthorized. Please refresh the page or log in again.');
-        return;
-      }
-      if (response.status === 401 || response.status === 403) {
-        setError('Unauthorized. Please refresh the page or log in again.');
-        return;
-      }
       if (!response.ok) {
         const { rawBody } = await parseMaybeJson(response);
         const bodySuffix = summarizeErrorBody(rawBody);
@@ -316,16 +307,7 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
       const response = await fetch(pdfUrl, {
         method: 'GET',
         headers: getAuthHeaders(),
-        redirect: 'manual',
       });
-      if (response.type === 'opaqueredirect' || response.status === 301 || response.status === 302) {
-        alert('Session expired or unauthorized. Please refresh the page or log in again.');
-        return;
-      }
-      if (response.status === 401 || response.status === 403) {
-        alert('Unauthorized. Please refresh the page or log in again.');
-        return;
-      }
       if (!response.ok) {
         throw new Error(`Failed to download report: ${response.status} ${response.statusText}`);
       }
