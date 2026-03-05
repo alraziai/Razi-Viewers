@@ -52,15 +52,13 @@ function Header({
   const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
 
 
-  // Get diagnosisId from URL query params
-  const getDiagnosisIdFromUrl = () => {
+  const getSeriesIdFromUrl = () => {
     const search = window.location.search || '';
     const hash = window.location.hash || '';
     const queryFromHash = hash.includes('?') ? hash.slice(hash.indexOf('?')) : '';
     const query = search.length > 1 ? search : queryFromHash;
     const params = new URLSearchParams(query);
-    // Accept both diagnosisId and diagnosesId for flexibility
-    return params.get('diagnosisId') || '';
+    return params.get('seriesId') || '';
   };
 
   // Get user initials
@@ -99,11 +97,11 @@ function Header({
   };
 
   const handleGenerateReport = () => {
-    const diagnosisId = getDiagnosisIdFromUrl();
-    if (diagnosisId) {
+    const seriesId = getSeriesIdFromUrl();
+    if (seriesId) {
       setIsReportModalOpen(true);
     } else {
-      alert('No diagnosis ID found in URL');
+      alert('No series ID found in URL');
     }
   }
 
@@ -216,7 +214,7 @@ function Header({
       <ReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
-        diagnosisId={getDiagnosisIdFromUrl()}
+        seriesId={getSeriesIdFromUrl()}
       />
     </IconPresentationProvider>
   );

@@ -4,10 +4,10 @@ import { Button, Icons } from '../';
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  diagnosisId: string | number;
+  seriesId: string | number;
 }
 
-export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) {
+export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
   const [reportData, setReportData] = useState<string>('');
   const [editedReport, setEditedReport] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -84,23 +84,6 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
     return headers;
   };
 
-  const isAbsoluteUrl = (value: string) => /^https?:\/\//i.test(value) || value.startsWith('//');
-
-  const normalizeBasePath = (value: string) => {
-    if (isAbsoluteUrl(value)) {
-      return value.replace(/\/+$/, '');
-    }
-
-    const normalized = value.startsWith('/') ? value : `/${value}`;
-    return normalized.replace(/\/+$/, '');
-  };
-
-  const splitStudyIds = (value: string) =>
-    value
-      .split(',')
-      .map(id => id.trim())
-      .filter(Boolean);
-
   const summarizeErrorBody = (rawBody: string) => {
     const trimmed = rawBody.trim();
     if (!trimmed) {
@@ -111,104 +94,45 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
     return ` ${snippet}`;
   };
 
-  const getReportPaths = (reportId: string) => {
+  const getReportPaths = (id: string) => {
     const config = (window as any)?.config ?? {};
-    const configuredPath = typeof config.reportApiPath === 'string' ? config.reportApiPath : '';
-    const configuredPaths = Array.isArray(config.reportApiPaths)
-      ? config.reportApiPaths.filter((value: unknown) => typeof value === 'string')
-      : [];
+    const apiBaseUrl = typeof config.reportApiBaseUrl === 'string'
+      ? config.reportApiBaseUrl.replace(/\/+$/, '')
+      : '';
 
-    const apiBaseUrl = typeof config.reportApiBaseUrl === 'string' ? config.reportApiBaseUrl : '';
+    const reportPath = `/api/series/${encodeURIComponent(id)}/diagnosis/report`;
+    const fullPath = apiBaseUrl ? `${apiBaseUrl}${reportPath}` : reportPath;
 
-    const defaultPaths = ['/api/diagnosis', '/api/diagnoses', '/api/studies'];
-    const basePaths = configuredPaths.length > 0 ? configuredPaths : configuredPath ? [configuredPath] : defaultPaths;
-
-    const reportIds = splitStudyIds(reportId);
-    const idsToTry = reportIds.length > 0 ? reportIds : [reportId];
-    const paths = basePaths.flatMap(basePath => {
-      const normalized = normalizeBasePath(basePath);
-      return idsToTry.map(id => {
-        const reportPath = `${normalized}/${encodeURIComponent(id)}/report`;
-        // If the path is relative and we have an API base URL, prepend it
-        if (!isAbsoluteUrl(reportPath) && apiBaseUrl) {
-          return `${apiBaseUrl}${reportPath}`;
-        }
-        return reportPath;
-      });
-    });
-
-    console.info(
-      '[ReportModal] report paths',
-      paths,
-      configuredPaths.length || configuredPath ? '(from config)' : '(default)',
-      apiBaseUrl ? `with base URL: ${apiBaseUrl}` : ''
-    );
-    return paths;
+    console.info('[ReportModal] report path', fullPath, apiBaseUrl ? `with base URL: ${apiBaseUrl}` : '');
+    return fullPath;
   };
 
   useEffect(() => {
-    if (isOpen && diagnosisId) {
+    if (isOpen && seriesId) {
       fetchReport();
     }
-  }, [isOpen, diagnosisId]);
+  }, [isOpen, seriesId]);
 
   const fetchReport = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const reportPaths = getReportPaths(String(diagnosisId));
-      let response: Response | null = null;
-      let responsePath = '';
-      let sawNon404 = false;
-      let lastError: { status: number; statusText: string; body: string; path: string } | null = null;
+      const reportPath = getReportPaths(String(seriesId));
+      console.info('[ReportModal] fetchReport path', reportPath);
 
-      for (const path of reportPaths) {
-        console.info('[ReportModal] fetchReport trying path', path);
-        const candidate = await fetch(path, {
-          method: 'GET',
-          headers: getAuthHeaders(),
-        });
+      const response = await fetch(reportPath, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
 
-        if (candidate.ok) {
-          response = candidate;
-          responsePath = path;
-          break;
-        }
-
-        const { rawBody } = await parseMaybeJson(candidate);
-        lastError = {
-          status: candidate.status,
-          statusText: candidate.statusText,
-          body: rawBody,
-          path,
-        };
-
-        if (candidate.status === 404) {
-          console.warn('[ReportModal] fetchReport 404 for path', path);
-          continue;
-        }
-
-        sawNon404 = true;
-        console.warn('[ReportModal] fetchReport non-OK for path', path, candidate.status);
+      if (!response.ok) {
+        const { rawBody } = await parseMaybeJson(response);
+        const bodySuffix = summarizeErrorBody(rawBody);
+        throw new Error(`Failed to fetch report: ${response.status} at ${reportPath}${bodySuffix}`);
       }
 
-      if (!response) {
-        if (!sawNon404) {
-          throw new Error(`Failed to fetch report: 404 for ${reportPaths.join(', ')}`);
-        }
-
-        if (lastError) {
-          const bodySuffix = summarizeErrorBody(lastError.body);
-          throw new Error(`Failed to fetch report: ${lastError.status} at ${lastError.path}${bodySuffix}`);
-        }
-
-        throw new Error('Failed to fetch report');
-      }
-
-      if (responsePath) {
-        setResolvedReportPath(responsePath);
-      }
+      setResolvedReportPath(reportPath);
 
       const { parsed } = await parseMaybeJson(response);
       console.log('DEBUG - Full API response:', parsed);
@@ -254,7 +178,7 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
         dataToSave = { report: JSON.parse(editedReport) };
       }
 
-      const targetPath = resolvedReportPath || getReportPaths(String(diagnosisId))[0];
+      const targetPath = resolvedReportPath || getReportPaths(String(seriesId));
       console.info('[ReportModal] handleSave using path', targetPath);
 
       const response = await fetch(targetPath, {
@@ -379,14 +303,7 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
   const handleDownloadReport = async () => {
     setIsDownloading(true);
     try {
-      const config = (window as Window & { config?: { reportApiBaseUrl?: string } }).config;
-      const baseUrl =
-        typeof config?.reportApiBaseUrl === 'string'
-          ? config.reportApiBaseUrl.replace(/\/$/, '')
-          : '';
-      const pdfUrl = baseUrl
-        ? `${baseUrl}/api/diagnosis/${diagnosisId}/report/pdf`
-        : `/api/diagnosis/${diagnosisId}/report/pdf`;
+      const pdfUrl = `${getReportPaths(String(seriesId))}/pdf`;
       const response = await fetch(pdfUrl, {
         method: 'GET',
         headers: getAuthHeaders(),
@@ -422,7 +339,7 @@ export function ReportModal({ isOpen, onClose, diagnosisId }: ReportModalProps) 
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div>
             <h2 className="text-2xl font-bold text-white">AI Diagnosis Report</h2>
-            <p className="text-sm text-white/60 mt-1">Diagnosis ID: {String(diagnosisId)}</p>
+            <p className="text-sm text-white/60 mt-1">Series ID: {String(seriesId)}</p>
           </div>
           <div className="flex items-center gap-2">
             <button
