@@ -135,24 +135,24 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
       setResolvedReportPath(reportPath);
 
       const { parsed } = await parseMaybeJson(response);
-      console.log('DEBUG - Full API response:', parsed);
+      const res = parsed as { data?: { report?: unknown; findings?: unknown; recommendations?: unknown; potential_diagnosis?: unknown }; success?: boolean; status?: number };
 
-      // Extract the report from the nested structure
-      const report = (parsed as any)?.data?.report ?? parsed;
-      console.log('DEBUG - Extracted report:', report);
-      console.log('DEBUG - Report type:', typeof report);
+      // Extract report: prefer data.report, else use data when it has findings/recommendations/potential_diagnosis
+      let report: unknown = res?.data?.report;
+      if (report === undefined && res?.data && (res.data.findings != null || res.data.recommendations != null || res.data.potential_diagnosis != null)) {
+        report = res.data;
+      }
+      if (report === undefined) {
+        report = parsed;
+      }
 
-      // Always ensure we stringify the report to a JSON string
       const formattedJson = typeof report === 'string' ? report : JSON.stringify(report, null, 2);
-      console.log('DEBUG - Formatted JSON type:', typeof formattedJson);
-
       setReportData(formattedJson);
       setEditedReport(formattedJson);
 
-      // Parse data for formatted view
       try {
-        const parsed = typeof report === 'string' ? JSON.parse(report) : report;
-        setParsedData(parsed);
+        const forView = typeof report === 'string' ? JSON.parse(report) : report;
+        setParsedData(forView);
       } catch (parseErr) {
         console.error('Failed to parse report for formatted view:', parseErr);
         setParsedData(null);
@@ -228,6 +228,142 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
   };
 
 
+  /** Render a key-value object as a simple table; supports one level of nesting (e.g. vertebral_body_heights.anterior) */
+  const renderFindingsTable = (obj: Record<string, unknown>, title: string) => {
+    if (!obj || typeof obj !== 'object') return null;
+    const entries = Object.entries(obj).filter(([, v]) => v !== undefined && v !== null);
+    if (entries.length === 0) return null;
+    return (
+      <div className="mb-4">
+        <h4 className="text-sm font-semibold text-[#48FFF6] mb-2">{title}</h4>
+        <table className="w-full text-sm">
+          <tbody>
+            {entries.map(([key, value]) => {
+              const isNested = value !== null && typeof value === 'object' && !Array.isArray(value) && Object.keys(value as object).length > 0;
+              const nested = value as Record<string, unknown>;
+              return (
+                <React.Fragment key={key}>
+                  {isNested ? (
+                    Object.entries(nested).map(([subKey, subVal]) =>
+                      typeof subVal === 'object' && subVal !== null && !Array.isArray(subVal) ? null : (
+                        <tr key={`${key}-${subKey}`} className="border-b border-white/5">
+                          <td className="py-1.5 px-2 text-white/80 font-medium">{key.replace(/_/g, ' ')} — {subKey.replace(/_/g, ' ')}</td>
+                          <td className="py-1.5 px-2 text-white/90">{String(subVal)}</td>
+                        </tr>
+                      )
+                    )
+                  ) : (
+                    <tr className="border-b border-white/5">
+                      <td className="py-1.5 px-2 text-white/80 font-medium">{key.replace(/_/g, ' ')}</td>
+                      <td className="py-1.5 px-2 text-white/90">{String(value)}</td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  /** Structured view for API shape: { findings, recommendations, potential_diagnosis } */
+  const renderStructuredReport = (data: Record<string, unknown>) => {
+    const findings = data.findings as Record<string, Record<string, unknown>> | undefined;
+    const recommendations = data.recommendations as Record<string, string[]> | undefined;
+    const potentialDiagnosis = data.potential_diagnosis as Record<string, Array<{ condition?: string; justification?: string }>> | undefined;
+
+    return (
+      <div className="space-y-6">
+        {findings && (findings.lateral_view || findings.ap_view) && (
+          <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
+            <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
+              <h3 className="text-lg font-semibold text-[#48FFF6]">Findings</h3>
+            </div>
+            <div className="p-4 space-y-4">
+              {findings.lateral_view && (
+                <div>
+                  <h4 className="text-sm font-semibold text-white/90 mb-2">Lateral View</h4>
+                  {Object.entries(findings.lateral_view).map(([sectionKey, sectionValue]) =>
+                    sectionValue && typeof sectionValue === 'object' && !Array.isArray(sectionValue) ? (
+                      <div key={sectionKey} className="mb-3">
+                        {renderFindingsTable(sectionValue as Record<string, unknown>, sectionKey.replace(/_/g, ' '))}
+                      </div>
+                    ) : null
+                  )}
+                </div>
+              )}
+              {findings.ap_view && (
+                <div>
+                  <h4 className="text-sm font-semibold text-white/90 mb-2">AP View</h4>
+                  {Object.entries(findings.ap_view).map(([sectionKey, sectionValue]) =>
+                    sectionValue && typeof sectionValue === 'object' && !Array.isArray(sectionValue) ? (
+                      <div key={sectionKey} className="mb-3">
+                        {renderFindingsTable(sectionValue as Record<string, unknown>, sectionKey.replace(/_/g, ' '))}
+                      </div>
+                    ) : null
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {potentialDiagnosis && (potentialDiagnosis.lateral_view?.length || potentialDiagnosis.ap_view?.length) && (
+          <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
+            <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
+              <h3 className="text-lg font-semibold text-[#48FFF6]">Potential Diagnosis</h3>
+            </div>
+            <div className="p-4 space-y-3">
+              {[...(potentialDiagnosis.lateral_view || []), ...(potentialDiagnosis.ap_view || [])].map((item, idx) => (
+                <div key={idx} className="border-l-2 border-[#48FFF6]/50 pl-3 py-1">
+                  <p className="font-medium text-white/95">{item.condition ?? '—'}</p>
+                  <p className="text-sm text-white/70 mt-0.5">{item.justification ?? ''}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {recommendations && (recommendations.further_investigation?.length || recommendations.clinical_correlation?.length) && (
+          <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
+            <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
+              <h3 className="text-lg font-semibold text-[#48FFF6]">Recommendations</h3>
+            </div>
+            <div className="p-4 space-y-3">
+              {recommendations.further_investigation?.length ? (
+                <div>
+                  <h4 className="text-sm font-semibold text-white/80 mb-1">Further investigation</h4>
+                  <ul className="list-disc list-inside text-sm text-white/80 space-y-1">
+                    {recommendations.further_investigation.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {recommendations.clinical_correlation?.length ? (
+                <div>
+                  <h4 className="text-sm font-semibold text-white/80 mb-1">Clinical correlation</h4>
+                  <ul className="list-disc list-inside text-sm text-white/80 space-y-1">
+                    {recommendations.clinical_correlation.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const isStructuredReport = (data: unknown): data is Record<string, unknown> => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+    const d = data as Record<string, unknown>;
+    return d.findings != null || d.recommendations != null || d.potential_diagnosis != null;
+  };
+
   // Recursively render any object/array as editable key-value pairs
   const renderKeyValue = (data: any, path: string[] = []) => {
     if (typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean' || data === null) {
@@ -276,6 +412,9 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
 
   const renderFormattedView = () => {
     if (!parsedData) return null;
+    if (isStructuredReport(parsedData)) {
+      return renderStructuredReport(parsedData);
+    }
     return (
       <div className="space-y-6">
         <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
