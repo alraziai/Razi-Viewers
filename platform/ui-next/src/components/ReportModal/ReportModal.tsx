@@ -228,11 +228,12 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
   };
 
 
-  /** Render a key-value object as a simple table; supports one level of nesting (e.g. vertebral_body_heights.anterior) */
-  const renderFindingsTable = (obj: Record<string, unknown>, title: string) => {
+  /** Editable table for findings; pathPrefix e.g. ["findings", "lateral_view", "intervertebral_space"] */
+  const renderFindingsTable = (obj: Record<string, unknown>, title: string, pathPrefix: string[]) => {
     if (!obj || typeof obj !== 'object') return null;
     const entries = Object.entries(obj).filter(([, v]) => v !== undefined && v !== null);
     if (entries.length === 0) return null;
+    const inputClass = 'w-full px-2 py-1 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#48FFF6]';
     return (
       <div className="mb-4">
         <h4 className="text-sm font-semibold text-[#48FFF6] mb-2">{title}</h4>
@@ -248,14 +249,28 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
                       typeof subVal === 'object' && subVal !== null && !Array.isArray(subVal) ? null : (
                         <tr key={`${key}-${subKey}`} className="border-b border-white/5">
                           <td className="py-1.5 px-2 text-white/80 font-medium">{key.replace(/_/g, ' ')} — {subKey.replace(/_/g, ' ')}</td>
-                          <td className="py-1.5 px-2 text-white/90">{String(subVal)}</td>
+                          <td className="py-1.5 px-2">
+                            <input
+                              type="text"
+                              value={String(subVal ?? '')}
+                              onChange={e => updateNestedValue([...pathPrefix, key, subKey], e.target.value)}
+                              className={inputClass}
+                            />
+                          </td>
                         </tr>
                       )
                     )
                   ) : (
                     <tr className="border-b border-white/5">
                       <td className="py-1.5 px-2 text-white/80 font-medium">{key.replace(/_/g, ' ')}</td>
-                      <td className="py-1.5 px-2 text-white/90">{String(value)}</td>
+                      <td className="py-1.5 px-2">
+                        <input
+                          type="text"
+                          value={String(value ?? '')}
+                          onChange={e => updateNestedValue([...pathPrefix, key], e.target.value)}
+                          className={inputClass}
+                        />
+                      </td>
                     </tr>
                   )}
                 </React.Fragment>
@@ -287,7 +302,7 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
                   {Object.entries(findings.lateral_view).map(([sectionKey, sectionValue]) =>
                     sectionValue && typeof sectionValue === 'object' && !Array.isArray(sectionValue) ? (
                       <div key={sectionKey} className="mb-3">
-                        {renderFindingsTable(sectionValue as Record<string, unknown>, sectionKey.replace(/_/g, ' '))}
+                        {renderFindingsTable(sectionValue as Record<string, unknown>, sectionKey.replace(/_/g, ' '), ['findings', 'lateral_view', sectionKey])}
                       </div>
                     ) : null
                   )}
@@ -299,7 +314,7 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
                   {Object.entries(findings.ap_view).map(([sectionKey, sectionValue]) =>
                     sectionValue && typeof sectionValue === 'object' && !Array.isArray(sectionValue) ? (
                       <div key={sectionKey} className="mb-3">
-                        {renderFindingsTable(sectionValue as Record<string, unknown>, sectionKey.replace(/_/g, ' '))}
+                        {renderFindingsTable(sectionValue as Record<string, unknown>, sectionKey.replace(/_/g, ' '), ['findings', 'ap_view', sectionKey])}
                       </div>
                     ) : null
                   )}
@@ -315,10 +330,40 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
               <h3 className="text-lg font-semibold text-[#48FFF6]">Potential Diagnosis</h3>
             </div>
             <div className="p-4 space-y-3">
-              {[...(potentialDiagnosis.lateral_view || []), ...(potentialDiagnosis.ap_view || [])].map((item, idx) => (
-                <div key={idx} className="border-l-2 border-[#48FFF6]/50 pl-3 py-1">
-                  <p className="font-medium text-white/95">{item.condition ?? '—'}</p>
-                  <p className="text-sm text-white/70 mt-0.5">{item.justification ?? ''}</p>
+              {(potentialDiagnosis.lateral_view || []).map((item, idx) => (
+                <div key={`lateral-${idx}`} className="border-l-2 border-[#48FFF6]/50 pl-3 py-2 space-y-1">
+                  <input
+                    type="text"
+                    value={item.condition ?? ''}
+                    onChange={e => updateNestedValue(['potential_diagnosis', 'lateral_view', String(idx), 'condition'], e.target.value)}
+                    className="w-full px-2 py-1.5 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm font-medium focus:outline-none focus:border-[#48FFF6]"
+                    placeholder="Condition"
+                  />
+                  <textarea
+                    value={item.justification ?? ''}
+                    onChange={e => updateNestedValue(['potential_diagnosis', 'lateral_view', String(idx), 'justification'], e.target.value)}
+                    rows={2}
+                    className="w-full px-2 py-1.5 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm resize-none focus:outline-none focus:border-[#48FFF6]"
+                    placeholder="Justification"
+                  />
+                </div>
+              ))}
+              {(potentialDiagnosis.ap_view || []).map((item, idx) => (
+                <div key={`ap-${idx}`} className="border-l-2 border-[#48FFF6]/50 pl-3 py-2 space-y-1">
+                  <input
+                    type="text"
+                    value={item.condition ?? ''}
+                    onChange={e => updateNestedValue(['potential_diagnosis', 'ap_view', String(idx), 'condition'], e.target.value)}
+                    className="w-full px-2 py-1.5 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm font-medium focus:outline-none focus:border-[#48FFF6]"
+                    placeholder="Condition"
+                  />
+                  <textarea
+                    value={item.justification ?? ''}
+                    onChange={e => updateNestedValue(['potential_diagnosis', 'ap_view', String(idx), 'justification'], e.target.value)}
+                    rows={2}
+                    className="w-full px-2 py-1.5 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm resize-none focus:outline-none focus:border-[#48FFF6]"
+                    placeholder="Justification"
+                  />
                 </div>
               ))}
             </div>
@@ -333,20 +378,34 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
             <div className="p-4 space-y-3">
               {recommendations.further_investigation?.length ? (
                 <div>
-                  <h4 className="text-sm font-semibold text-white/80 mb-1">Further investigation</h4>
-                  <ul className="list-disc list-inside text-sm text-white/80 space-y-1">
+                  <h4 className="text-sm font-semibold text-white/80 mb-2">Further investigation</h4>
+                  <ul className="space-y-2">
                     {recommendations.further_investigation.map((item, i) => (
-                      <li key={i}>{item}</li>
+                      <li key={i}>
+                        <input
+                          type="text"
+                          value={item}
+                          onChange={e => updateNestedValue(['recommendations', 'further_investigation', String(i)], e.target.value)}
+                          className="w-full px-2 py-1.5 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#48FFF6]"
+                        />
+                      </li>
                     ))}
                   </ul>
                 </div>
               ) : null}
               {recommendations.clinical_correlation?.length ? (
                 <div>
-                  <h4 className="text-sm font-semibold text-white/80 mb-1">Clinical correlation</h4>
-                  <ul className="list-disc list-inside text-sm text-white/80 space-y-1">
+                  <h4 className="text-sm font-semibold text-white/80 mb-2">Clinical correlation</h4>
+                  <ul className="space-y-2">
                     {recommendations.clinical_correlation.map((item, i) => (
-                      <li key={i}>{item}</li>
+                      <li key={i}>
+                        <input
+                          type="text"
+                          value={item}
+                          onChange={e => updateNestedValue(['recommendations', 'clinical_correlation', String(i)], e.target.value)}
+                          className="w-full px-2 py-1.5 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#48FFF6]"
+                        />
+                      </li>
                     ))}
                   </ul>
                 </div>
