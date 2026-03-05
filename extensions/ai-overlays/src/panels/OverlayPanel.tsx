@@ -4,9 +4,15 @@ import { diagnosisStore } from '../diagnosisStore';
 import type { DiagnosisData } from '../diagnosisStore';
 import { getViewportStudyUID } from '../utils/studyOverlays';
 
-// Helper to parse observations JSON
-function parseObservations(observationsStr: string | null): unknown {
-  if (!observationsStr) {
+// Helper to parse observations JSON (accepts string or already-parsed object)
+function parseObservations(observationsStr: string | object | null | undefined): unknown {
+  if (observationsStr == null) {
+    return null;
+  }
+  if (typeof observationsStr === 'object' && !Array.isArray(observationsStr)) {
+    return observationsStr;
+  }
+  if (typeof observationsStr !== 'string') {
     return null;
   }
   try {
@@ -17,137 +23,125 @@ function parseObservations(observationsStr: string | null): unknown {
   }
 }
 
-// Helper to render observations in a structured way
-function ObservationsDisplay({ observations }: { observations: unknown }) {
-  if (!observations || typeof observations !== 'object') {
-    return null;
-  }
-  const obs = observations as Record<string, unknown>;
-  const renderTable = (title: string, data: Record<string, unknown>) => {
-    const entries = Object.entries(data);
-    if (entries.length === 0) {
-      return null;
-    }
+const humanize = (key: string) =>
+  key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
+const tableRowClass = 'border-b border-[#2E86D5]';
+const tdKeyClass =
+  'border-r border-[#2E86D5] bg-[#FFFFFF1A] px-3 py-2 font-medium text-white text-xs';
+const tdValClass = 'bg-transparent px-3 py-2 text-white/80 text-xs';
+
+/** Recursively render any value for display (read-only) */
+function renderValue(value: unknown): React.ReactNode {
+  if (value === null || value === undefined) return '—';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return (
+      <ul className="list-disc list-inside space-y-0.5 text-xs">
+        {value.map((item, i) => (
+          <li key={i}>{renderValue(item)}</li>
+        ))}
+      </ul>
+    );
+  }
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    return (
+      <div className="ml-2 mt-1 space-y-1 rounded border border-[#2E86D5]/50 p-2">
+        {Object.entries(obj).map(([k, v]) => (
+          <div key={k} className="flex gap-2">
+            <span className="shrink-0 text-white/70">{humanize(k)}:</span>
+            <span className="text-white/90">{renderValue(v)}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return String(value);
+}
+
+/** Dynamic key-value section: one table for a flat object, or nested sections for nested objects */
+function renderObservationSection(
+  title: string,
+  data: unknown,
+  isRoot = false
+): React.ReactNode {
+  if (data === null || data === undefined) return null;
+  if (typeof data !== 'object' || Array.isArray(data)) {
     return (
       <div className="mb-3">
-        <div className="mb-2 text-sm font-semibold text-white">{title}</div>
-        <div className="overflow-hidden rounded-lg border border-[#2E86D5]">
-          <table className="w-full text-xs">
-            <tbody>
-              {entries.map(([key, value], index) => (
-                <tr
-                  key={key}
-                  className={index !== entries.length - 1 ? 'border-b border-[#2E86D5]' : ''}
-                >
-                  <td
-                    className="border-r border-[#2E86D5] bg-[#FFFFFF1A] px-6 py-5 font-medium text-white"
-                    style={{ width: '40%' }}
-                  >
-                    {key.replace(/_/g, ' ')}
-                  </td>
-                  <td className="bg-transparent px-6 py-5 text-white/80">{String(value)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="mb-1 text-sm font-semibold text-white">{title}</div>
+        <div className="rounded-lg border border-[#2E86D5] bg-[#102b40] px-3 py-2 text-xs text-white/80">
+          {renderValue(data)}
         </div>
       </div>
     );
-  };
+  }
+  const obj = data as Record<string, unknown>;
+  const entries = Object.entries(obj).filter(([, v]) => v !== undefined && v !== null);
+  if (entries.length === 0) return null;
+
+  const hasNestedObjects = entries.some(
+    ([, v]) =>
+      typeof v === 'object' &&
+      v !== null &&
+      !Array.isArray(v) &&
+      Object.keys(v as object).length > 0
+  );
+
+  if (hasNestedObjects) {
+    return (
+      <div className={`${isRoot ? '' : 'mb-2'} space-y-2`}>
+        <div className="text-sm font-semibold text-white">{title}</div>
+        {entries.map(([key, value]) => {
+          const section = renderObservationSection(humanize(key), value, false);
+          return section ? <div key={key}>{section}</div> : null;
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-3">
+      <div className="mb-2 text-sm font-semibold text-white">{title}</div>
+      <div className="overflow-hidden rounded-lg border border-[#2E86D5]">
+        <table className="w-full text-xs">
+          <tbody>
+            {entries.map(([key, value], index) => (
+              <tr
+                key={key}
+                className={index !== entries.length - 1 ? tableRowClass : ''}
+              >
+                <td className={tdKeyClass} style={{ width: '40%' }}>
+                  {humanize(key)}
+                </td>
+                <td className={tdValClass}>{renderValue(value)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/** Observations: dynamic key-value display for any observation object */
+function ObservationsDisplay({ observations }: { observations: unknown }) {
+  if (!observations || typeof observations !== 'object' || Array.isArray(observations)) {
+    return null;
+  }
+  const obs = observations as Record<string, unknown>;
+  const entries = Object.entries(obs).filter(([, v]) => v !== undefined && v !== null);
+  if (entries.length === 0) return null;
 
   return (
     <div className="mt-2 space-y-3">
-      {/* View Type - inline display */}
-      {obs.view && (
-        <div className="text-sm">
-          <span className="font-semibold text-white">View:</span>{' '}
-          <span className="text-white/80">{String(obs.view).replace(/_/g, ' ')}</span>
-        </div>
-      )}
-
-      {/* Soft Tissue Line Observation */}
-      {obs.soft_tissue_line_observation &&
-        renderTable('Soft Tissue Line Observation', obs.soft_tissue_line_observation as Record<string, unknown>)}
-
-      {/* Predental Space */}
-      {obs.predental_space && renderTable('Predental Space', obs.predental_space as Record<string, unknown>)}
-
-      {/* Alignment Observation */}
-      {obs.alignment_observation &&
-        renderTable('Alignment Observation', obs.alignment_observation as Record<string, unknown>)}
-
-      {/* Vertebrae Present */}
-      {obs.vertebrae_observation && (
-        <div className="mb-3">
-          <div className="mb-2 text-sm font-semibold text-white">Vertebrae Present</div>
-          <div className="rounded-lg border border-[#2E86D5] bg-[#102b40] px-6 py-5 text-xs text-white/80">
-            {Object.entries(obs.vertebrae_observation as Record<string, string>)
-              .filter(([_, val]) => val === 'yes')
-              .map(([key]) => key)
-              .join(', ')}
-          </div>
-        </div>
-      )}
-
-      {/* Osteophytes */}
-      {obs.osteophytes_observation && (
-        <div className="mb-3">
-          <div className="mb-2 text-sm font-semibold text-white">Osteophytes</div>
-          <div className="rounded-lg border border-[#2E86D5] bg-[#102b40] px-6 py-5 text-xs text-white/80">
-            {Object.entries(obs.osteophytes_observation as Record<string, string>)
-              .filter(([_, val]) => val === 'Yes')
-              .map(([key]) => key)
-              .join(', ') || 'None detected'}
-          </div>
-        </div>
-      )}
-
-      {/* Intervertebral Space Observation */}
-      {obs.intervertebral_space_observation && (
-        <div className="mb-3">
-          <div className="mb-2 text-sm font-semibold text-white">Intervertebral Spacing</div>
-          {Object.entries(obs.intervertebral_space_observation as Record<string, unknown>).map(
-              ([category, spaces]) => (
-              <div
-                key={category}
-                className="mb-2"
-              >
-                <div className="mb-1 ml-1 text-xs font-medium text-white/90">
-                  {category.replace(/_/g, ' ')}:
-                </div>
-                <div className="overflow-hidden rounded-lg border border-[#2E86D5]">
-                  <table className="w-full text-xs">
-                    <tbody>
-                      {typeof spaces === 'object' &&
-                        Object.entries(spaces as Record<string, unknown>).map(
-                          ([key, value], index, arr) => (
-                            <tr
-                              key={key}
-                              className={
-                                index !== arr.length - 1 ? 'border-b border-[#2E86D5]' : ''
-                              }
-                            >
-                              <td
-                                className="border-r border-[#2E86D5] bg-[#FFFFFF1A] px-6 py-5 font-medium text-white"
-                                style={{ width: '40%' }}
-                              >
-                                {key}
-                              </td>
-                              <td className="bg-transparent px-6 py-5 text-white/80">
-                                {String(value)}
-                              </td>
-                            </tr>
-                          )
-                        )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )
-          )}
-        </div>
-      )}
+      {entries.map(([key, value]) => {
+        const section = renderObservationSection(humanize(key), value, true);
+        return section ? <div key={key}>{section}</div> : null;
+      })}
     </div>
   );
 }

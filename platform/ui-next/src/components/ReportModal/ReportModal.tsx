@@ -228,202 +228,175 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
   };
 
 
-  /** Editable table for findings; pathPrefix e.g. ["findings", "lateral_view", "intervertebral_space"] */
-  const renderFindingsTable = (obj: Record<string, unknown>, title: string, pathPrefix: string[]) => {
-    if (!obj || typeof obj !== 'object') return null;
-    const entries = Object.entries(obj).filter(([, v]) => v !== undefined && v !== null);
-    if (entries.length === 0) return null;
-    const inputClass = 'w-full px-2 py-1 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#48FFF6]';
-    return (
-      <div className="mb-4">
-        <h4 className="text-sm font-semibold text-[#48FFF6] mb-2">{title}</h4>
-        <table className="w-full text-sm">
-          <tbody>
-            {entries.map(([key, value]) => {
-              const isNested = value !== null && typeof value === 'object' && !Array.isArray(value) && Object.keys(value as object).length > 0;
-              const nested = value as Record<string, unknown>;
-              return (
-                <React.Fragment key={key}>
-                  {isNested ? (
-                    Object.entries(nested).map(([subKey, subVal]) =>
-                      typeof subVal === 'object' && subVal !== null && !Array.isArray(subVal) ? null : (
-                        <tr key={`${key}-${subKey}`} className="border-b border-white/5">
-                          <td className="py-1.5 px-2 text-white/80 font-medium">{key.replace(/_/g, ' ')} — {subKey.replace(/_/g, ' ')}</td>
-                          <td className="py-1.5 px-2">
+  const humanize = (key: string) =>
+    key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+  const inputClass = 'w-full px-2 py-1.5 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#48FFF6]';
+
+  /** Dynamic key-value report renderer: works for any API shape (objects → sections, arrays → lists, primitives → inputs) */
+  const renderDynamicReport = (data: unknown, path: string[] = []): React.ReactNode => {
+    if (data === null || data === undefined) return null;
+    if (typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean') {
+      const isLong = typeof data === 'string' && data.length > 60;
+      return (
+        <tr className="border-b border-white/5">
+          <td className="py-2 px-3 text-sm font-medium text-white/80 align-top">{path.length ? humanize(path[path.length - 1]) : ''}</td>
+          <td className="py-2 px-3">
+            {isLong ? (
+              <textarea
+                value={String(data)}
+                onChange={e => updateNestedValue(path, e.target.value)}
+                rows={3}
+                className={`${inputClass} resize-none`}
+              />
+            ) : (
+              <input
+                type="text"
+                value={String(data)}
+                onChange={e => updateNestedValue(path, e.target.value)}
+                className={inputClass}
+              />
+            )}
+          </td>
+        </tr>
+      );
+    }
+    if (Array.isArray(data)) {
+      return (
+        <tr className="border-b border-white/5">
+          <td className="py-2 px-3 text-sm font-medium text-white/80 align-top" colSpan={1}>
+            {path.length ? humanize(path[path.length - 1]) : ''}
+          </td>
+          <td className="py-2 px-3">
+            <ul className="space-y-2">
+              {data.map((item, i) => (
+                <li key={i} className="flex flex-col gap-1">
+                  {typeof item === 'object' && item !== null && !Array.isArray(item) ? (
+                    <div className="rounded border border-white/10 p-2 space-y-2">
+                      {Object.entries(item as Record<string, unknown>).map(([k, v]) =>
+                        typeof v === 'object' && v !== null && (Array.isArray(v) || (typeof v === 'object' && Object.keys(v).length > 0)) ? (
+                          <div key={k}>
+                            <span className="text-xs font-semibold text-[#48FFF6]">{humanize(k)}</span>
+                            <div className="ml-2 mt-1 space-y-1">
+                              {typeof v === 'object' && v !== null && !Array.isArray(v)
+                                ? Object.entries(v as Record<string, unknown>).map(([k2, v2]) => (
+                                    <div key={k2} className="flex gap-2 items-center">
+                                      <span className="text-xs text-white/70 shrink-0">{humanize(k2)}:</span>
+                                      <input
+                                        type="text"
+                                        value={String(v2 ?? '')}
+                                        onChange={e => updateNestedValue([...path, String(i), k, k2], e.target.value)}
+                                        className={`${inputClass} flex-1 min-w-0`}
+                                      />
+                                    </div>
+                                  ))
+                                : null}
+                            </div>
+                          </div>
+                        ) : (
+                          <div key={k} className="flex gap-2 items-center">
+                            <span className="text-xs text-white/70 shrink-0">{humanize(k)}:</span>
                             <input
                               type="text"
-                              value={String(subVal ?? '')}
-                              onChange={e => updateNestedValue([...pathPrefix, key, subKey], e.target.value)}
-                              className={inputClass}
+                              value={String(v ?? '')}
+                              onChange={e => updateNestedValue([...path, String(i), k], e.target.value)}
+                              className={`${inputClass} flex-1 min-w-0`}
                             />
-                          </td>
-                        </tr>
-                      )
-                    )
+                          </div>
+                        )
+                      )}
+                    </div>
                   ) : (
-                    <tr className="border-b border-white/5">
-                      <td className="py-1.5 px-2 text-white/80 font-medium">{key.replace(/_/g, ' ')}</td>
-                      <td className="py-1.5 px-2">
-                        <input
-                          type="text"
-                          value={String(value ?? '')}
-                          onChange={e => updateNestedValue([...pathPrefix, key], e.target.value)}
-                          className={inputClass}
-                        />
-                      </td>
-                    </tr>
+                    <input
+                      type="text"
+                      value={typeof item === 'string' || typeof item === 'number' ? String(item) : ''}
+                      onChange={e => updateNestedValue([...path, String(i)], e.target.value)}
+                      className={inputClass}
+                    />
                   )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    );
+                </li>
+              ))}
+            </ul>
+          </td>
+        </tr>
+      );
+    }
+    if (typeof data === 'object') {
+      const obj = data as Record<string, unknown>;
+      const entries = Object.entries(obj).filter(([, v]) => v !== undefined);
+      if (entries.length === 0) return null;
+      return (
+        <>
+          {entries.map(([key, value]) => (
+            <React.Fragment key={key}>
+              {typeof value === 'object' && value !== null && !Array.isArray(value) && Object.keys(value as object).length > 0 ? (
+                <tr className="bg-white/5">
+                  <td colSpan={2} className="py-2 px-3">
+                    <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
+                      <div className="px-3 py-2 border-b border-white/10">
+                        <span className="text-sm font-semibold text-[#48FFF6]">{humanize(key)}</span>
+                      </div>
+                      <div className="p-3">
+                        <table className="w-full text-sm">
+                          <tbody>
+                            {Object.entries(value as Record<string, unknown>).map(([k, v]) =>
+                              v !== undefined ? renderDynamicReport(v, [...path, key, k]) : null
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                renderDynamicReport(value, [...path, key])
+              )}
+            </React.Fragment>
+          ))}
+        </>
+      );
+    }
+    return null;
   };
 
-  /** Structured view for API shape: { findings, recommendations, potential_diagnosis } */
-  const renderStructuredReport = (data: Record<string, unknown>) => {
-    const findings = data.findings as Record<string, Record<string, unknown>> | undefined;
-    const recommendations = data.recommendations as Record<string, string[]> | undefined;
-    const potentialDiagnosis = data.potential_diagnosis as Record<string, Array<{ condition?: string; justification?: string }>> | undefined;
-
+  /** Top-level dynamic report: each root key becomes a section card */
+  const renderReportSections = (data: Record<string, unknown>) => {
     return (
       <div className="space-y-6">
-        {findings && (findings.lateral_view || findings.ap_view) && (
-          <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
-            <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
-              <h3 className="text-lg font-semibold text-[#48FFF6]">Findings</h3>
+        {Object.entries(data).map(([key, value]) => {
+          if (value === undefined || value === null) return null;
+          return (
+            <div key={key} className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
+              <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
+                <h3 className="text-lg font-semibold text-[#48FFF6]">{humanize(key)}</h3>
+              </div>
+              <div className="p-4">
+                {typeof value === 'object' && !Array.isArray(value) ? (
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {Object.entries(value as Record<string, unknown>).map(([k, v]) =>
+                        v !== undefined ? renderDynamicReport(v, [key, k]) : null
+                      )}
+                    </tbody>
+                  </table>
+                ) : Array.isArray(value) ? (
+                  <table className="w-full text-sm">
+                    <tbody>{renderDynamicReport(value, [key])}</tbody>
+                  </table>
+                ) : (
+                  <table className="w-full text-sm">
+                    <tbody>{renderDynamicReport(value, [key])}</tbody>
+                  </table>
+                )}
+              </div>
             </div>
-            <div className="p-4 space-y-4">
-              {findings.lateral_view && (
-                <div>
-                  <h4 className="text-sm font-semibold text-white/90 mb-2">Lateral View</h4>
-                  {Object.entries(findings.lateral_view).map(([sectionKey, sectionValue]) =>
-                    sectionValue && typeof sectionValue === 'object' && !Array.isArray(sectionValue) ? (
-                      <div key={sectionKey} className="mb-3">
-                        {renderFindingsTable(sectionValue as Record<string, unknown>, sectionKey.replace(/_/g, ' '), ['findings', 'lateral_view', sectionKey])}
-                      </div>
-                    ) : null
-                  )}
-                </div>
-              )}
-              {findings.ap_view && (
-                <div>
-                  <h4 className="text-sm font-semibold text-white/90 mb-2">AP View</h4>
-                  {Object.entries(findings.ap_view).map(([sectionKey, sectionValue]) =>
-                    sectionValue && typeof sectionValue === 'object' && !Array.isArray(sectionValue) ? (
-                      <div key={sectionKey} className="mb-3">
-                        {renderFindingsTable(sectionValue as Record<string, unknown>, sectionKey.replace(/_/g, ' '), ['findings', 'ap_view', sectionKey])}
-                      </div>
-                    ) : null
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {potentialDiagnosis && (potentialDiagnosis.lateral_view?.length || potentialDiagnosis.ap_view?.length) && (
-          <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
-            <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
-              <h3 className="text-lg font-semibold text-[#48FFF6]">Potential Diagnosis</h3>
-            </div>
-            <div className="p-4 space-y-3">
-              {(potentialDiagnosis.lateral_view || []).map((item, idx) => (
-                <div key={`lateral-${idx}`} className="border-l-2 border-[#48FFF6]/50 pl-3 py-2 space-y-1">
-                  <input
-                    type="text"
-                    value={item.condition ?? ''}
-                    onChange={e => updateNestedValue(['potential_diagnosis', 'lateral_view', String(idx), 'condition'], e.target.value)}
-                    className="w-full px-2 py-1.5 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm font-medium focus:outline-none focus:border-[#48FFF6]"
-                    placeholder="Condition"
-                  />
-                  <textarea
-                    value={item.justification ?? ''}
-                    onChange={e => updateNestedValue(['potential_diagnosis', 'lateral_view', String(idx), 'justification'], e.target.value)}
-                    rows={2}
-                    className="w-full px-2 py-1.5 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm resize-none focus:outline-none focus:border-[#48FFF6]"
-                    placeholder="Justification"
-                  />
-                </div>
-              ))}
-              {(potentialDiagnosis.ap_view || []).map((item, idx) => (
-                <div key={`ap-${idx}`} className="border-l-2 border-[#48FFF6]/50 pl-3 py-2 space-y-1">
-                  <input
-                    type="text"
-                    value={item.condition ?? ''}
-                    onChange={e => updateNestedValue(['potential_diagnosis', 'ap_view', String(idx), 'condition'], e.target.value)}
-                    className="w-full px-2 py-1.5 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm font-medium focus:outline-none focus:border-[#48FFF6]"
-                    placeholder="Condition"
-                  />
-                  <textarea
-                    value={item.justification ?? ''}
-                    onChange={e => updateNestedValue(['potential_diagnosis', 'ap_view', String(idx), 'justification'], e.target.value)}
-                    rows={2}
-                    className="w-full px-2 py-1.5 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm resize-none focus:outline-none focus:border-[#48FFF6]"
-                    placeholder="Justification"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {recommendations && (recommendations.further_investigation?.length || recommendations.clinical_correlation?.length) && (
-          <div className="bg-[#0D1B2E]/50 rounded-lg border border-white/10 overflow-hidden">
-            <div className="bg-[#0D1B2E] px-4 py-3 border-b border-white/10">
-              <h3 className="text-lg font-semibold text-[#48FFF6]">Recommendations</h3>
-            </div>
-            <div className="p-4 space-y-3">
-              {recommendations.further_investigation?.length ? (
-                <div>
-                  <h4 className="text-sm font-semibold text-white/80 mb-2">Further investigation</h4>
-                  <ul className="space-y-2">
-                    {recommendations.further_investigation.map((item, i) => (
-                      <li key={i}>
-                        <input
-                          type="text"
-                          value={item}
-                          onChange={e => updateNestedValue(['recommendations', 'further_investigation', String(i)], e.target.value)}
-                          className="w-full px-2 py-1.5 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#48FFF6]"
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-              {recommendations.clinical_correlation?.length ? (
-                <div>
-                  <h4 className="text-sm font-semibold text-white/80 mb-2">Clinical correlation</h4>
-                  <ul className="space-y-2">
-                    {recommendations.clinical_correlation.map((item, i) => (
-                      <li key={i}>
-                        <input
-                          type="text"
-                          value={item}
-                          onChange={e => updateNestedValue(['recommendations', 'clinical_correlation', String(i)], e.target.value)}
-                          className="w-full px-2 py-1.5 bg-[#0D1B2E] border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#48FFF6]"
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        )}
+          );
+        })}
       </div>
     );
   };
 
-  const isStructuredReport = (data: unknown): data is Record<string, unknown> => {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
-    const d = data as Record<string, unknown>;
-    return d.findings != null || d.recommendations != null || d.potential_diagnosis != null;
-  };
-
-  // Recursively render any object/array as editable key-value pairs
+  // Recursively render any object/array as editable key-value pairs (flat table fallback)
   const renderKeyValue = (data: any, path: string[] = []) => {
     if (typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean' || data === null) {
       // Render as editable input or textarea for long strings
@@ -471,8 +444,8 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
 
   const renderFormattedView = () => {
     if (!parsedData) return null;
-    if (isStructuredReport(parsedData)) {
-      return renderStructuredReport(parsedData);
+    if (typeof parsedData === 'object' && !Array.isArray(parsedData) && parsedData !== null) {
+      return renderReportSections(parsedData as Record<string, unknown>);
     }
     return (
       <div className="space-y-6">
@@ -499,6 +472,8 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
   };
 
   const handleDownloadReport = async () => {
+    // Open window immediately (same turn as user click) so popup blockers don't block it
+    const newWin = window.open('', '_blank');
     setIsDownloading(true);
     try {
       const pdfUrl = `${getReportPaths(String(seriesId))}/pdf`;
@@ -510,12 +485,29 @@ export function ReportModal({ isOpen, onClose, seriesId }: ReportModalProps) {
         throw new Error(`Failed to download report: ${response.status} ${response.statusText}`);
       }
       const blob = await response.blob();
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/pdf') && blob.type && !blob.type.includes('pdf')) {
+        console.warn('[ReportModal] PDF download: response may not be PDF', { contentType, blobType: blob.type });
+      }
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      if (newWin && !newWin.closed) {
+        newWin.location.href = url;
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      } else {
+        // Fallback: trigger download via temporary link (works when popup was blocked)
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `report-series-${seriesId}.pdf`;
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      }
     } catch (err) {
       console.error('Report download failed:', err);
       alert(err instanceof Error ? err.message : 'Failed to download report');
+      if (newWin && !newWin.closed) newWin.close();
     } finally {
       setIsDownloading(false);
     }
