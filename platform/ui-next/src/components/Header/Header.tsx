@@ -127,16 +127,14 @@ function Header({
               onClick={onClickReturn}
               data-cy="return-to-work-list"
             >
-              {isReturnEnabled && <Icons.ArrowLeft className="text-primary ml-1 h-7 w-7" />}
+              {isReturnEnabled && <Icons.ArrowLeft className="text-primary ml-1 h-5 w-5" />}
               <div className="ml-1">
                 {WhiteLabeling?.createLogoComponentFn?.(React, props) || (
-                  <div className="flex flex-col items-start gap-2">
-                    <div className="flex flex-row items-center gap-4">
-                      <Icons.RAZILogo />
-                      <Icons.RAZILogoText />
-                    </div>
-                    <Icons.RAZIRadiologyText />
-                  </div>
+                  <img
+                    src="./logo.svg"
+                    alt="Logo"
+                    className="h-10 w-auto object-contain"
+                  />
                 )}
                 {/* {WhiteLabeling?.createLogoComponentFn?.(React, props) || <Icons.RAZILogoText />} */}
               </div>
