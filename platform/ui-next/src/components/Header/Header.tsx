@@ -117,7 +117,7 @@ function Header({
         isSticky={isSticky}
         {...props}
       >
-        <div className="relative h-[100px] items-center">
+        <div className="relative h-[100px] w-full items-center">
           <div className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center px-4">
             <div
               className={classNames(
