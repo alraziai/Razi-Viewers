@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useImageViewer } from '@ohif/ui-next';
-import { useSystem, utils } from '@ohif/core';
+import { DicomMetadataStore, useSystem, utils } from '@ohif/core';
 import { useNavigate } from 'react-router-dom';
 import { useViewportGrid, StudyBrowser, Separator } from '@ohif/ui-next';
 import { PanelStudyBrowserHeader } from './PanelStudyBrowserHeader';
@@ -53,6 +53,41 @@ function PanelStudyBrowser({
   );
 
   const [actionIcons, setActionIcons] = useState(defaultActionIcons);
+
+  const addStudiesToDisplayList = useCallback(studies => {
+    const mappedStudies = _mapStudiesForStudyBrowser(studies);
+
+    if (!mappedStudies.length) {
+      return false;
+    }
+
+    setStudyDisplayList(prevArray => {
+      const ret = [...prevArray];
+
+      for (const study of mappedStudies) {
+        if (!ret.find(it => it.studyInstanceUid === study.studyInstanceUid)) {
+          ret.push(study);
+        }
+      }
+
+      return ret;
+    });
+
+    return true;
+  }, []);
+
+  const addFallbackStudyToDisplayList = useCallback(
+    StudyInstanceUID => {
+      const fallbackStudy = _getFallbackStudyForStudyBrowser(StudyInstanceUID);
+
+      if (!fallbackStudy) {
+        return false;
+      }
+
+      return addStudiesToDisplayList([fallbackStudy]);
+    },
+    [addStudiesToDisplayList]
+  );
 
   // multiple can be true or false
   const updateActionIconValue = actionIcon => {
@@ -107,6 +142,8 @@ function PanelStudyBrowser({
 
   // ~~ studyDisplayList
   useEffect(() => {
+    let isCancelled = false;
+
     // Fetch all studies for the patient in each primary study
     async function fetchStudiesForPatient(StudyInstanceUID) {
       // Skip fetching if we've already fetched this study
@@ -117,13 +154,24 @@ function PanelStudyBrowser({
       fetchedStudiesRef.current.add(StudyInstanceUID);
 
       // current study qido
-      const qidoForStudyUID = await dataSource.query.studies.search({
-        studyInstanceUid: StudyInstanceUID,
-      });
+      let qidoForStudyUID;
+      try {
+        qidoForStudyUID = await dataSource.query.studies.search({
+          studyInstanceUid: StudyInstanceUID,
+        });
+      } catch (error) {
+        console.warn(`Failed to load study browser data for study ${StudyInstanceUID}`, error);
+        if (!isCancelled) {
+          addFallbackStudyToDisplayList(StudyInstanceUID);
+        }
+        return;
+      }
 
       if (!qidoForStudyUID?.length) {
-        navigate('/notfoundstudy', '_self');
-        throw new Error('Invalid study URL');
+        if (!isCancelled && !addFallbackStudyToDisplayList(StudyInstanceUID)) {
+          navigate('/notfoundstudy', '_self');
+        }
+        return;
       }
 
       let qidoStudiesForPatient = qidoForStudyUID;
@@ -136,30 +184,33 @@ function PanelStudyBrowser({
         console.warn(error);
       }
 
-      const mappedStudies = _mapDataSourceStudies(qidoStudiesForPatient);
-      const actuallyMappedStudies = mappedStudies.map(qidoStudy => {
-        return {
-          studyInstanceUid: qidoStudy.StudyInstanceUID,
-          date: formatDate(qidoStudy.StudyDate) || '',
-          description: qidoStudy.StudyDescription,
-          modalities: qidoStudy.ModalitiesInStudy,
-          numInstances: Number(qidoStudy.NumInstances),
-        };
-      });
+      if (isCancelled) {
+        return;
+      }
 
-      setStudyDisplayList(prevArray => {
-        const ret = [...prevArray];
-        for (const study of actuallyMappedStudies) {
-          if (!prevArray.find(it => it.studyInstanceUid === study.studyInstanceUid)) {
-            ret.push(study);
-          }
-        }
-        return ret;
-      });
+      addStudiesToDisplayList(qidoStudiesForPatient?.length ? qidoStudiesForPatient : qidoForStudyUID);
     }
 
-    StudyInstanceUIDs.forEach(sid => fetchStudiesForPatient(sid));
-  }, [StudyInstanceUIDs, dataSource, getStudiesForPatientByMRN, navigate]);
+    StudyInstanceUIDs.forEach(sid => {
+      void fetchStudiesForPatient(sid).catch(error => {
+        console.warn(`Unexpected study browser failure for study ${sid}`, error);
+        if (!isCancelled) {
+          addFallbackStudyToDisplayList(sid);
+        }
+      });
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    StudyInstanceUIDs,
+    addFallbackStudyToDisplayList,
+    addStudiesToDisplayList,
+    dataSource,
+    getStudiesForPatientByMRN,
+    navigate,
+  ]);
 
   // ~~ Initial Thumbnails
   useEffect(() => {
@@ -467,6 +518,50 @@ function _mapDataSourceStudies(studies) {
       StudyTime: study.time,
     };
   });
+}
+
+function _mapStudiesForStudyBrowser(studies) {
+  return _mapDataSourceStudies(studies).map(qidoStudy => {
+    return {
+      studyInstanceUid: qidoStudy.StudyInstanceUID,
+      date: formatDate(qidoStudy.StudyDate) || '',
+      description: qidoStudy.StudyDescription,
+      modalities: qidoStudy.ModalitiesInStudy,
+      numInstances: Number(qidoStudy.NumInstances),
+    };
+  });
+}
+
+function _getFallbackStudyForStudyBrowser(StudyInstanceUID) {
+  const study = DicomMetadataStore.getStudy(StudyInstanceUID);
+
+  if (!study) {
+    return;
+  }
+
+  const modalitiesFromStudy = Array.isArray(study.ModalitiesInStudy)
+    ? study.ModalitiesInStudy.filter(Boolean).join('/')
+    : study.ModalitiesInStudy || '';
+  const modalitiesFromSeries = Array.from(
+    new Set(study.series.map(series => series.instances?.[0]?.Modality).filter(Boolean))
+  ).join('/');
+  const derivedNumInstances = study.series.reduce(
+    (total, series) => total + (series.instances?.length || 0),
+    0
+  );
+
+  return {
+    accession: study.AccessionNumber || '',
+    date: study.StudyDate || '',
+    description: study.StudyDescription || '',
+    instances: Number(study.NumInstances) || derivedNumInstances,
+    modalities: modalitiesFromStudy || modalitiesFromSeries,
+    mrn: study.PatientID || '',
+    patientName:
+      typeof study.PatientName === 'string' ? study.PatientName : utils.formatPN(study.PatientName),
+    studyInstanceUid: study.StudyInstanceUID,
+    time: study.StudyTime || '',
+  };
 }
 
 function _mapDisplaySets(displaySets, displaySetLoadingState, thumbnailImageSrcMap, viewports) {
