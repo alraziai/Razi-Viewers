@@ -57,6 +57,7 @@ type StyleMap = {
 const closeIconWidth = 30;
 const gridHorizontalPadding = 10;
 const tabSpacerWidth = 2;
+const sidePanelBackground = 'linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)';
 
 const baseClasses = 'justify-start box-content flex flex-col h-full';
 // const baseClasses = 'bg-gradient-to-b from-[#2E86D5] to-[#48FFF6] border-[#FFFFFF1A] justify-start box-content flex flex-col';
@@ -287,9 +288,12 @@ const SidePanel = ({
       <>
         <div
           className={classnames(
-            'bg-[#083A4A] border border-[#FFFFFF1A] flex h-[28px] w-full cursor-pointer items-center rounded-md hover:bg-[#0A4A5A] transition-colors',
+            'border border-[#FFFFFF1A] flex h-[28px] w-full cursor-pointer items-center rounded-md transition-colors',
             side === 'left' ? 'justify-end pr-2' : 'justify-start pl-2'
           )}
+          style={{
+            background: sidePanelBackground,
+          }}
           onClick={() => {
             updatePanelOpen(!panelOpen);
           }}
@@ -348,7 +352,7 @@ const SidePanel = ({
           side === 'left' ? 'right-0' : 'left-0'
         )}
         style={{
-          background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+          background: sidePanelBackground,
           borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
           borderImageSlice: 1,
           width: `${closeIconWidth}px`
@@ -373,7 +377,7 @@ const SidePanel = ({
         {getCloseIcon()}
         <div className={classnames('flex grow justify-center')}
           style={{
-            background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+            background: sidePanelBackground,
             borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
             borderImageSlice: 1,
           }}
@@ -448,7 +452,7 @@ const SidePanel = ({
         data-cy={`${tabs[0].name}-btn`}
         onClick={() => updatePanelOpen(!panelOpen)}
         style={{
-          background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+          background: sidePanelBackground,
           borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
           borderImageSlice: 1,
         }}
@@ -464,7 +468,7 @@ const SidePanel = ({
       <>
         <div className="border-b border-[#FFFFFF1A] flex h-[40px] flex-shrink-0 select-none rounded-t p-2"
           style={{
-            background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+            background: sidePanelBackground,
             borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
             borderImageSlice: 1,
           }}
@@ -483,7 +487,10 @@ const SidePanel = ({
   return (
     <div
       className={classnames(className, baseClasses)}
-      style={style}
+      style={{
+        ...style,
+        background: sidePanelBackground,
+      }}
     >
       {panelOpen ? (
         <>
