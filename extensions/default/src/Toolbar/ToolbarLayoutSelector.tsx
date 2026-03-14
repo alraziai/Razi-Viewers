@@ -138,10 +138,10 @@ function ToolbarLayoutSelectorWithServices({
         {...props}
       >
         <LayoutSelector.Trigger tooltip={t('Change layout')} />
-        <LayoutSelector.Content>
+        <LayoutSelector.Content className="border border-[#48FFF6]/20 bg-[linear-gradient(90deg,_#102b40_0%,_#143947_50%,_#112d41_100%)]">
           {/* Left side - Presets */}
           {(commonPresets.length > 0 || advancedPresets.length > 0) && (
-            <div className="bg-popover flex flex-col gap-2.5 rounded-lg p-2">
+            <div className="flex flex-col gap-2.5 rounded-lg bg-transparent p-2">
               {commonPresets.length > 0 && (
                 <>
                   <LayoutSelector.PresetSection title={t('Common')}>
@@ -176,7 +176,7 @@ function ToolbarLayoutSelectorWithServices({
           )}
 
           {/* Right Side - Grid Layout */}
-          <div className="bg-muted flex flex-col gap-2.5 border-l-2 border-solid border-black p-2">
+          <div className="flex flex-col gap-2.5 border-l border-[#48FFF6]/20 bg-transparent p-2">
             <div className="text-muted-foreground text-xs">{t('Custom')}</div>
             <LayoutSelector.GridSelector
               rows={rows}
