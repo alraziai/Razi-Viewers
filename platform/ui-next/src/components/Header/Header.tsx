@@ -50,6 +50,7 @@ function Header({
   const [authState] = useUserAuthentication();
   const user = authState?.user;
   const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
+  const [isGenerateReportHovered, setIsGenerateReportHovered] = React.useState(false);
 
   // Get studyId from URL query params
   const getStudyIdFromUrl = () => {
@@ -151,9 +152,25 @@ function Header({
             <div className="border-primary-dark mx-1.5 h-[25px] border-r hidden"></div>
             <div className="flex-shrink-0">
               <button
-                className="text-[#0D0FAF] h-full w-full gap-4 rounded-3xl py-4 px-14 bg-linear-to-b from-[#2E86D5] to-[#48FFF6] text-[12px] font-medium"
+                type="button"
+                onMouseEnter={() => setIsGenerateReportHovered(true)}
+                onMouseLeave={() => setIsGenerateReportHovered(false)}
                 style={{
-                  background: 'linear-gradient(180deg, #2E86D5, #48FFF6)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  borderRadius: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: '#0D0FAF',
+                  background: isGenerateReportHovered
+                    ? 'linear-gradient(to right, #48FFF6, #2E86D5)'
+                    : 'linear-gradient(to right, #2E86D5, #48FFF6)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  opacity: isGenerateReportHovered ? 0.9 : 1,
+                  transition: 'opacity 200ms ease, background 200ms ease',
                 }}
                 onClick={handleGenerateReport}
               >
