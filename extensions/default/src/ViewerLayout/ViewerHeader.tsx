@@ -98,10 +98,10 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
         )
       }
       UndoRedo={
-        <div className="text-primary flex cursor-pointer items-center">
+        <div className="flex cursor-pointer items-center">
           <Button
             variant="ghost"
-            className="hover:bg-[#0D2536]"
+            className="text-foreground/80 hover:bg-[#0D2536] hover:text-highlight"
             onClick={() => {
               commandsManager.run('undo');
             }}
@@ -110,7 +110,7 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
           </Button>
           <Button
             variant="ghost"
-            className="hover:bg-[#0D2536]"
+            className="text-foreground/80 hover:bg-[#0D2536] hover:text-highlight"
             onClick={() => {
               commandsManager.run('redo');
             }}
