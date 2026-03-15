@@ -300,7 +300,7 @@ const SidePanel = ({
           data-cy={`side-panel-header-${side}`}
         >
           <Icons.NavigationPanelReveal
-            className={classnames('text-[#48FFF6]', side === 'left' && 'rotate-180 transform')}
+            className={classnames('text-white', side === 'left' && 'rotate-180 transform')}
           />
         </div>
         <div className={classnames('mt-3 flex flex-col space-y-3')}>
@@ -310,14 +310,14 @@ const SidePanel = ({
                 <div
                   id={`${childComponent.name}-btn`}
                   data-cy={`${childComponent.name}-btn`}
-                  className="text-[#48FFF6] hover:cursor-pointer hover:text-[#2E86D5] transition-colors"
+                  className="text-white hover:cursor-pointer transition-colors"
                   onClick={() => {
                     return childComponent.disabled ? null : updateActiveTabIndex(index, true);
                   }}
                 >
                   {React.createElement(Icons[childComponent.iconName] || Icons.MissingIcon, {
                     className: classnames({
-                      'text-[#48FFF6]': true,
+                      'text-white': true,
                       'ohif-disabled': childComponent.disabled,
                     }),
                     style: {
@@ -363,7 +363,7 @@ const SidePanel = ({
         data-cy={`side-panel-header-${side}`}
       >
         {React.createElement(Icons[openStateIconName[side]] || Icons.MissingIcon, {
-          className: 'text-[#48FFF6] hover:text-[#2E86D5] transition-colors',
+          className: 'text-white transition-colors',
         })}
       </div>
     );
@@ -447,7 +447,7 @@ const SidePanel = ({
     return (
       <div
         className={classnames(
-          'text-[#48FFF6] flex grow cursor-pointer select-none justify-center self-center text-[13px] hover:text-[#2E86D5] transition-colors'
+          'text-white flex grow cursor-pointer select-none justify-center self-center text-[13px] transition-colors'
         )}
         data-cy={`${tabs[0].name}-btn`}
         onClick={() => updatePanelOpen(!panelOpen)}
