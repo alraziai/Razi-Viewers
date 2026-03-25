@@ -215,14 +215,14 @@ function ViewportDataOverlayMenu({ viewportId }: withAppTypes<{ viewportId: stri
 
   return (
     <div
-      className="bg-popover flex h-full w-[275px] flex-col rounded rounded-md p-1.5"
+      className="flex h-full w-[275px] flex-col rounded-md border border-[#48FFF6]/20 bg-[linear-gradient(90deg,_#102b40_0%,_#143947_50%,_#112d41_100%)] p-1.5 shadow-md"
       data-cy={`viewport-data-overlay-menu-${viewportId}`}
     >
       {/* Top buttons row */}
       <div className={`flex`}>
         <Button
           variant="ghost"
-          className="text-primary flex items-center p-1"
+          className="flex items-center p-1 text-[#48FFF6] hover:bg-[#083A4A] hover:text-white"
           onClick={() => {
             // Add a new pending foreground slot with a unique ID
             setPendingForegrounds([...pendingForegrounds, `pending-${Date.now()}`]);
@@ -234,7 +234,7 @@ function ViewportDataOverlayMenu({ viewportId }: withAppTypes<{ viewportId: stri
         </Button>
         <Button
           variant="ghost"
-          className="text-primary ml-2 flex items-center"
+          className="ml-2 flex items-center text-[#48FFF6] hover:bg-[#083A4A] hover:text-white"
           disabled={potentialOverlayDisplaySets.length === 0}
           onClick={() => {
             setPendingSegmentations([...pendingSegmentations, `seg-${Date.now()}`]);

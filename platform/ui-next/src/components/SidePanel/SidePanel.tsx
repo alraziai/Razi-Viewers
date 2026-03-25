@@ -58,6 +58,7 @@ const closeIconWidth = 30;
 const gridHorizontalPadding = 10;
 const tabSpacerWidth = 2;
 const sidePanelBackground = 'linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)';
+const sidePanelSurfaceClass = 'bg-[#102b40]';
 
 const baseClasses = 'justify-start box-content flex flex-col h-full';
 // const baseClasses = 'bg-gradient-to-b from-[#2E86D5] to-[#48FFF6] border-[#FFFFFF1A] justify-start box-content flex flex-col';
@@ -113,7 +114,7 @@ const getTabClassNames = (
   isActiveTab: boolean,
   isTabDisabled: boolean
 ) =>
-  classnames('h-[28px] mb-[2px] cursor-pointer text-white bg-black', {
+  classnames('h-[28px] mb-[2px] cursor-pointer text-white', sidePanelSurfaceClass, {
     'hover:text-[#48FFF6]': !isActiveTab && !isTabDisabled,
     'text-[#48FFF6]': isActiveTab && !isTabDisabled,
     'rounded-l': tabIndex % numColumns === 0,
@@ -382,7 +383,7 @@ const SidePanel = ({
             borderImageSlice: 1,
           }}
         >
-          <div className={classnames('bg-black text-[#48FFF6] flex flex-wrap')}>
+          <div className={classnames('text-[#48FFF6] flex flex-wrap', sidePanelSurfaceClass)}>
             {tabs.map((tab, tabIndex) => {
               const { disabled } = tab;
               return (
@@ -390,11 +391,12 @@ const SidePanel = ({
                   {tabIndex % numCols !== 0 && (
                     <div
                       className={classnames(
-                        'flex h-[28px] w-[2px] items-center bg-black',
+                        'flex h-[28px] w-[2px] items-center',
+                        sidePanelSurfaceClass,
                         tabSpacerWidth
                       )}
                     >
-                      <div className="bg-black h-[20px] w-full"></div>
+                      <div className={classnames('h-[20px] w-full', sidePanelSurfaceClass)}></div>
                     </div>
                   )}
                   <Tooltip key={tabIndex}>

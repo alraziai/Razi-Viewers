@@ -22,7 +22,7 @@ function OpacityMenu({ viewportId, className }: OpacityMenuProps) {
 
   return (
     <div className={className}>
-      <div className="bg-popover w-72 rounded-lg p-3">
+      <div className="w-72 rounded-lg border border-[#48FFF6]/20 bg-[linear-gradient(90deg,_#102b40_0%,_#143947_50%,_#112d41_100%)] p-3 shadow-md">
         <div className="mb-2 flex items-center justify-center">
           <span className="text-muted-foreground text-base">Opacity</span>
         </div>

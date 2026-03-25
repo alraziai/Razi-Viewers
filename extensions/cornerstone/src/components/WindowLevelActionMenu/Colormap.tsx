@@ -73,7 +73,7 @@ export function Colormap({ viewportId }: { viewportId?: string } = {}): ReactEle
       )}
 
       <div
-        className="hover:bg-accent flex h-8 w-full flex-shrink-0 cursor-pointer items-center px-2 text-base hover:rounded"
+        className="flex h-8 w-full flex-shrink-0 cursor-pointer items-center rounded px-2 text-base transition-colors hover:bg-[#083A4A]"
         onClick={() => setShowPreview(!showPreview)}
       >
         <span className="flex-shrink-0">{t('Preview in viewport')}</span>

@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import { Icons } from '@ohif/ui-next';
 
 const arrowClasses =
-  'cursor-pointer flex items-center justify-center shrink-0 text-highlight active:text-foreground hover:bg-primary/30 rounded';
+  'cursor-pointer flex items-center justify-center shrink-0 rounded text-[#48FFF6] active:text-white hover:bg-[#102b40]/85';
 
 /**
  * A small set of left/right arrow icons for stepping through slices or series.
