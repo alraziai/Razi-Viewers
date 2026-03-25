@@ -62,8 +62,10 @@ const Thumbnail = ({
     return (
       <div
         className={classnames(
-          'flex h-full w-full flex-col items-center justify-center gap-[2px] bg-black p-[4px]',
-          isActive && 'bg-[#083A4A] rounded border border-[#48FFF6]/50'
+          'flex h-full w-full flex-col items-center justify-center gap-[2px] rounded border border-transparent bg-[#102b40] p-[4px] transition-colors',
+          isActive
+            ? 'border-[#48FFF6]/50 bg-[#083A4A]'
+            : 'hover:border-[#48FFF6]/20 hover:bg-[#12384A]'
         )}
       >
         <div className="h-[114px] w-[128px]">
@@ -166,8 +168,10 @@ const Thumbnail = ({
     return (
       <div
         className={classnames(
-          'flex h-full w-full items-center justify-between pr-[8px] pl-[8px] pt-[4px] pb-[4px]',
-          isActive && 'bg-[#083A4A] rounded border border-[#48FFF6]/50'
+          'flex h-full w-full items-center justify-between rounded border pr-[8px] pl-[8px] pt-[4px] pb-[4px] transition-colors',
+          isActive
+            ? 'border-[#48FFF6]/50 bg-[#083A4A]'
+            : 'border-transparent bg-[#102b40] hover:border-[#48FFF6]/20 hover:bg-[#12384A]'
         )}
       >
         <div className="relative flex h-[32px] w-full items-center gap-[8px] overflow-hidden">
@@ -216,9 +220,9 @@ const Thumbnail = ({
             <Tooltip>
               <TooltipTrigger>
                 <div className="group">
-                  <Icons.StatusTracking className="text-primary-light h-[20px] w-[15px] group-hover:hidden" />
+                  <Icons.StatusTracking className="text-[#48FFF6] h-[20px] w-[15px] group-hover:hidden" />
                   <Icons.Cancel
-                    className="text-primary-light hidden h-[15px] w-[15px] group-hover:block"
+                    className="text-[#48FFF6] hidden h-[15px] w-[15px] group-hover:block"
                     onClick={onClickUntrack}
                   />
                 </div>
@@ -226,7 +230,7 @@ const Thumbnail = ({
               <TooltipContent side="right">
                 <div className="flex flex-1 flex-row">
                   <div className="flex-2 flex items-center justify-center pr-4">
-                    <Icons.InfoLink className="text-primary" />
+                    <Icons.InfoLink className="text-[#48FFF6]" />
                   </div>
                   <div className="flex flex-1 flex-col">
                     <span>
@@ -253,7 +257,7 @@ const Thumbnail = ({
     <div
       className={classnames(
         className,
-        'bg-muted hover:bg-primary/30 group flex cursor-pointer select-none flex-col rounded outline-none',
+        'group flex cursor-pointer select-none flex-col rounded outline-none transition-colors',
         viewPreset === 'thumbnails' && 'h-[170px] w-[135px]',
         viewPreset === 'list' && 'h-[40px] w-full'
       )}

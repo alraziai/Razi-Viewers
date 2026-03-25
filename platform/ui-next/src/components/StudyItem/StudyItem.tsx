@@ -35,7 +35,10 @@ const StudyItem = ({
       defaultValue={isActive ? 'study-item' : undefined}
     >
       <AccordionItem value="study-item">
-        <AccordionTrigger className={classnames('hover:bg-[#083A4A] border-b border-[#FFFFFF1A] group w-full rounded transition-colors', isActive && 'bg-[#083A4A]')}
+        <AccordionTrigger className={classnames(
+          'hover:bg-[#083A4A] border-b border-[#FFFFFF1A] group w-full rounded transition-colors [&>svg]:!text-[#48FFF6]',
+          isActive && 'bg-[#083A4A]'
+        )}
           style={{
             background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
             borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
