@@ -57,6 +57,8 @@ type StyleMap = {
 const closeIconWidth = 30;
 const gridHorizontalPadding = 10;
 const tabSpacerWidth = 2;
+const sidePanelBackground = 'linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)';
+const sidePanelSurfaceClass = 'bg-[#102b40]';
 
 const baseClasses = 'justify-start box-content flex flex-col h-full';
 // const baseClasses = 'bg-gradient-to-b from-[#2E86D5] to-[#48FFF6] border-[#FFFFFF1A] justify-start box-content flex flex-col';
@@ -112,7 +114,7 @@ const getTabClassNames = (
   isActiveTab: boolean,
   isTabDisabled: boolean
 ) =>
-  classnames('h-[28px] mb-[2px] cursor-pointer text-white bg-black', {
+  classnames('h-[28px] mb-[2px] cursor-pointer text-white', sidePanelSurfaceClass, {
     'hover:text-[#48FFF6]': !isActiveTab && !isTabDisabled,
     'text-[#48FFF6]': isActiveTab && !isTabDisabled,
     'rounded-l': tabIndex % numColumns === 0,
@@ -287,16 +289,19 @@ const SidePanel = ({
       <>
         <div
           className={classnames(
-            'bg-[#083A4A] border border-[#FFFFFF1A] flex h-[28px] w-full cursor-pointer items-center rounded-md hover:bg-[#0A4A5A] transition-colors',
+            'border border-[#FFFFFF1A] flex h-[28px] w-full cursor-pointer items-center rounded-md transition-colors',
             side === 'left' ? 'justify-end pr-2' : 'justify-start pl-2'
           )}
+          style={{
+            background: sidePanelBackground,
+          }}
           onClick={() => {
             updatePanelOpen(!panelOpen);
           }}
           data-cy={`side-panel-header-${side}`}
         >
           <Icons.NavigationPanelReveal
-            className={classnames('text-[#48FFF6]', side === 'left' && 'rotate-180 transform')}
+            className={classnames('text-white', side === 'left' && 'rotate-180 transform')}
           />
         </div>
         <div className={classnames('mt-3 flex flex-col space-y-3')}>
@@ -306,14 +311,14 @@ const SidePanel = ({
                 <div
                   id={`${childComponent.name}-btn`}
                   data-cy={`${childComponent.name}-btn`}
-                  className="text-[#48FFF6] hover:cursor-pointer hover:text-[#2E86D5] transition-colors"
+                  className="text-white hover:cursor-pointer transition-colors"
                   onClick={() => {
                     return childComponent.disabled ? null : updateActiveTabIndex(index, true);
                   }}
                 >
                   {React.createElement(Icons[childComponent.iconName] || Icons.MissingIcon, {
                     className: classnames({
-                      'text-[#48FFF6]': true,
+                      'text-white': true,
                       'ohif-disabled': childComponent.disabled,
                     }),
                     style: {
@@ -348,7 +353,7 @@ const SidePanel = ({
           side === 'left' ? 'right-0' : 'left-0'
         )}
         style={{
-          background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+          background: sidePanelBackground,
           borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
           borderImageSlice: 1,
           width: `${closeIconWidth}px`
@@ -359,7 +364,7 @@ const SidePanel = ({
         data-cy={`side-panel-header-${side}`}
       >
         {React.createElement(Icons[openStateIconName[side]] || Icons.MissingIcon, {
-          className: 'text-[#48FFF6] hover:text-[#2E86D5] transition-colors',
+          className: 'text-white transition-colors',
         })}
       </div>
     );
@@ -373,12 +378,12 @@ const SidePanel = ({
         {getCloseIcon()}
         <div className={classnames('flex grow justify-center')}
           style={{
-            background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+            background: sidePanelBackground,
             borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
             borderImageSlice: 1,
           }}
         >
-          <div className={classnames('bg-black text-[#48FFF6] flex flex-wrap')}>
+          <div className={classnames('text-[#48FFF6] flex flex-wrap', sidePanelSurfaceClass)}>
             {tabs.map((tab, tabIndex) => {
               const { disabled } = tab;
               return (
@@ -386,11 +391,12 @@ const SidePanel = ({
                   {tabIndex % numCols !== 0 && (
                     <div
                       className={classnames(
-                        'flex h-[28px] w-[2px] items-center bg-black',
+                        'flex h-[28px] w-[2px] items-center',
+                        sidePanelSurfaceClass,
                         tabSpacerWidth
                       )}
                     >
-                      <div className="bg-black h-[20px] w-full"></div>
+                      <div className={classnames('h-[20px] w-full', sidePanelSurfaceClass)}></div>
                     </div>
                   )}
                   <Tooltip key={tabIndex}>
@@ -443,12 +449,12 @@ const SidePanel = ({
     return (
       <div
         className={classnames(
-          'text-[#48FFF6] flex grow cursor-pointer select-none justify-center self-center text-[13px] hover:text-[#2E86D5] transition-colors'
+          'text-white flex grow cursor-pointer select-none justify-center self-center text-[13px] transition-colors'
         )}
         data-cy={`${tabs[0].name}-btn`}
         onClick={() => updatePanelOpen(!panelOpen)}
         style={{
-          background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+          background: sidePanelBackground,
           borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
           borderImageSlice: 1,
         }}
@@ -464,7 +470,7 @@ const SidePanel = ({
       <>
         <div className="border-b border-[#FFFFFF1A] flex h-[40px] flex-shrink-0 select-none rounded-t p-2"
           style={{
-            background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
+            background: sidePanelBackground,
             borderImage: "linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1",
             borderImageSlice: 1,
           }}
@@ -483,7 +489,10 @@ const SidePanel = ({
   return (
     <div
       className={classnames(className, baseClasses)}
-      style={style}
+      style={{
+        ...style,
+        background: sidePanelBackground,
+      }}
     >
       {panelOpen ? (
         <>

@@ -27,12 +27,12 @@ function PanelStudyBrowserHeader({
         <div className={'flex h-[24px] w-full select-none justify-center self-center text-[14px]'}>
           <div className="flex w-full items-center gap-[10px]">
             <div className="flex items-center justify-center">
-              <div className="text-[#48FFF6] flex items-center space-x-1">
+              <div className="text-white flex items-center space-x-1">
                 {actionIcons.map((icon: actionIcon, index) =>
                   React.createElement(Icons[icon.iconName] || Icons.MissingIcon, {
                     key: index,
                     onClick: () => updateActionIconValue(icon),
-                    className: `cursor-pointer`,
+                    className: 'cursor-pointer text-white',
                   })
                 )}
               </div>
@@ -51,9 +51,11 @@ function PanelStudyBrowserHeader({
                     key={index}
                     aria-label={viewPreset.id}
                     value={viewPreset.id}
-                    className="text-actions-primary"
+                    className="text-white hover:text-white data-[state=on]:text-white"
                   >
-                    {React.createElement(Icons[viewPreset.iconName] || Icons.MissingIcon)}
+                    {React.createElement(Icons[viewPreset.iconName] || Icons.MissingIcon, {
+                      className: 'text-white',
+                    })}
                   </ToggleGroupItem>
                 ))}
               </ToggleGroup>

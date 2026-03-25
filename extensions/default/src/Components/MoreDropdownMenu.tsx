@@ -90,13 +90,13 @@ export default function MoreDropdownMenu(bindProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="hidden group-hover:inline-flex data-[state=open]:inline-flex"
+            className="text-[#48FFF6] hover:text-[#BFFBFF] hidden group-hover:inline-flex data-[state=open]:inline-flex"
             onClick={e => {
               e.preventDefault();
               e.stopPropagation();
             }}
           >
-            <Icons.More />
+            <Icons.More className="h-5 w-5 text-[#48FFF6]" />
           </Button>
         </DropdownMenuTrigger>
         {getMenuItems({

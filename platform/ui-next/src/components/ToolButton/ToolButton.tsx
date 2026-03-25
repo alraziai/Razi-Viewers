@@ -6,10 +6,10 @@ import { cn } from '../../lib/utils';
 import { useIconPresentation } from '../../contextProviders/IconPresentationProvider';
 
 const baseClasses = '!rounded-lg inline-flex items-center justify-center';
-const defaultClasses = 'bg-transparent text-foreground/80 hover:bg-background hover:text-highlight';
+const defaultClasses = 'bg-transparent text-foreground/80 hover:bg-[#102b40] hover:text-[#48FFF6]';
 const activeClasses = 'bg-highlight text-background hover:!bg-highlight/80';
 const disabledClasses =
-  'text-common-bright hover:bg-primary-dark hover:text-primary-light opacity-40 cursor-not-allowed';
+  'text-common-bright hover:bg-[#102b40] hover:text-[#BFFBFF] opacity-40 cursor-not-allowed';
 
 const sizeClasses = {
   default: {

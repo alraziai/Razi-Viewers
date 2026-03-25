@@ -7,7 +7,7 @@ import PropTypes from 'prop-types';
 function ViewportActionButton({ onInteraction, commands, id, children }) {
   return (
     <div
-      className="bg-primary-main hover:bg-primary-light ml-1 cursor-pointer rounded px-1.5 hover:text-black"
+      className="ml-1 cursor-pointer rounded border border-[#48FFF6]/20 bg-[#102b40]/90 px-1.5 text-[#48FFF6] transition-colors hover:bg-[#143947] hover:text-white"
       // Using onMouseUp because onClick wasn't firing if pointer-events are none.
       onMouseUp={() => {
         onInteraction({

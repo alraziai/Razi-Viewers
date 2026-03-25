@@ -50,6 +50,7 @@ function Header({
   const [authState] = useUserAuthentication();
   const user = authState?.user;
   const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
+  const [isGenerateReportHovered, setIsGenerateReportHovered] = React.useState(false);
 
   // Get studyId from URL query params
   const getStudyIdFromUrl = () => {
@@ -117,7 +118,7 @@ function Header({
         isSticky={isSticky}
         {...props}
       >
-        <div className="relative h-[100px] items-center">
+        <div className="relative h-[100px] w-full items-center">
           <div className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center px-4">
             <div
               className={classNames(
@@ -127,16 +128,14 @@ function Header({
               onClick={onClickReturn}
               data-cy="return-to-work-list"
             >
-              {isReturnEnabled && <Icons.ArrowLeft className="text-primary ml-1 h-7 w-7" />}
+              {isReturnEnabled && <Icons.ArrowLeft className="text-primary ml-1 h-5 w-5" />}
               <div className="ml-1">
                 {WhiteLabeling?.createLogoComponentFn?.(React, props) || (
-                  <div className="flex flex-col items-start gap-2">
-                    <div className="flex flex-row items-center gap-4">
-                      <Icons.RAZILogo />
-                      <Icons.RAZILogoText />
-                    </div>
-                    <Icons.RAZIRadiologyText />
-                  </div>
+                  <img
+                    src="./logo.svg"
+                    alt="Logo"
+                    className="h-10 w-auto object-contain"
+                  />
                 )}
                 {/* {WhiteLabeling?.createLogoComponentFn?.(React, props) || <Icons.RAZILogoText />} */}
               </div>
@@ -153,9 +152,25 @@ function Header({
             <div className="border-primary-dark mx-1.5 h-[25px] border-r hidden"></div>
             <div className="flex-shrink-0">
               <button
-                className="text-[#0D0FAF] h-full w-full gap-4 rounded-3xl py-4 px-14 bg-linear-to-b from-[#2E86D5] to-[#48FFF6] text-[12px] font-medium"
+                type="button"
+                onMouseEnter={() => setIsGenerateReportHovered(true)}
+                onMouseLeave={() => setIsGenerateReportHovered(false)}
                 style={{
-                  background: 'linear-gradient(180deg, #2E86D5, #48FFF6)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  borderRadius: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: '#0D0FAF',
+                  background: isGenerateReportHovered
+                    ? 'linear-gradient(to right, #48FFF6, #2E86D5)'
+                    : 'linear-gradient(to right, #2E86D5, #48FFF6)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  opacity: isGenerateReportHovered ? 0.9 : 1,
+                  transition: 'opacity 200ms ease, background 200ms ease',
                 }}
                 onClick={handleGenerateReport}
               >

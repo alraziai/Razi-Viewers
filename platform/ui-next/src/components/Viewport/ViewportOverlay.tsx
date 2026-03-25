@@ -17,7 +17,7 @@ const classes = {
   bottomLeft: 'overlay-bottom left-viewport',
 };
 
-function ViewportOverlay({ topLeft, topRight, bottomRight, bottomLeft, color = 'text-highlight', shadowClass = 'shadow-dark' }) {
+function ViewportOverlay({ topLeft, topRight, bottomRight, bottomLeft, color = 'text-[#BFFBFF]', shadowClass = 'shadow-dark' }) {
   const overlay = 'absolute pointer-events-none viewport-overlay';
 
   return (

@@ -27,7 +27,7 @@ window.config = {
   },
   showErrorDetails: 'always', // 'always', 'dev', 'production'
   // Report API configuration
-  reportApiBaseUrl: 'http://35.188.151.244',
+  reportApiBaseUrl: 'https://api.alrazi.ai',
   reportApiPath: '/api/diagnosis',
   // filterQueryParam: false,
   // Defines multi-monitor layouts

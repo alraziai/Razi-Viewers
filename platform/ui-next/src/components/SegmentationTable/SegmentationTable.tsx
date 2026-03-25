@@ -107,7 +107,7 @@ export const SegmentationTableRoot = (props: SegmentationTableProps) => {
       }}
     >
       <PanelSection defaultOpen={true}>
-        <PanelSection.Header className="flex items-center justify-between">
+        <PanelSection.Header className="flex items-center justify-between [&>svg]:!text-[#48FFF6]">
           <span>{t(title)}</span>
           {hasConfigComponent && (
             <div className="ml-auto mr-2">

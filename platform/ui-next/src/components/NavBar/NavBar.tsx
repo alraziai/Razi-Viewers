@@ -17,15 +17,16 @@ const NavBar = ({
   return (
     <div
       className={classnames(
-        'z-20 border-black px-1',
+        'z-20 flex justify-between border-b-2 px-1 py-5',
         isSticky && stickyClasses,
         !isSticky && notStickyClasses,
         className
       )}
       style={{
-        background: 'linear-gradient(90deg, #102C40, #133948, #102C40',
-        // background: 'linear-gradient(90deg, #0A1628, #48FFF6, #0A1628',
-        // background: 'linear-gradient(90deg, #0A1628, #0D1B35, #0A1628'
+        background: 'linear-gradient(90deg, #102b40 0%, #143947 50%, #112d41 100%)',
+        borderImage: 'linear-gradient(180deg, #2E86D5 0%, #48FFF6 100%) 1',
+        borderImageSlice: 1,
+        borderStyle: 'solid',
       }}
     >
       {children}

@@ -149,72 +149,72 @@ function ViewportOrientationMenu({
         </div>
       </PopoverTrigger>
       <PopoverContent
-        className="h-[170px] w-[130px] flex-shrink-0 flex-col items-start rounded p-1"
+        className="h-[170px] w-[130px] flex-shrink-0 flex-col items-start rounded-lg border border-[#48FFF6]/20 p-1 shadow-md"
         align={align}
         side={side}
         style={{ left: 0 }}
       >
         <Button
           variant="ghost"
-          className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch px-1 py-0"
+          className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch rounded-md px-1 py-0 text-white hover:bg-[#083A4A] hover:text-white"
           onClick={() => handleOrientationChange('axial')}
         >
           <div className="mr-1 flex w-6 items-center justify-start">
             {currentOrientation === 'axial' ? (
-              <Icons.Checked className="text-primary h-6 w-6" />
+              <Icons.Checked className="h-6 w-6 text-[#48FFF6]" />
             ) : null}
           </div>
-          <div className="flex-1 text-left">Axial</div>
+          <div className="flex-1 text-left text-[#BFFBFF]">Axial</div>
         </Button>
         <Button
           variant="ghost"
-          className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch px-1 py-0"
+          className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch rounded-md px-1 py-0 text-white hover:bg-[#083A4A] hover:text-white"
           onClick={() => handleOrientationChange('sagittal')}
         >
           <div className="mr-1 flex w-6 items-center justify-start">
             {currentOrientation === 'sagittal' ? (
-              <Icons.Checked className="text-primary h-6 w-6" />
+              <Icons.Checked className="h-6 w-6 text-[#48FFF6]" />
             ) : null}
           </div>
-          <div className="flex-1 text-left">Sagittal</div>
+          <div className="flex-1 text-left text-[#BFFBFF]">Sagittal</div>
         </Button>
         <Button
           variant="ghost"
-          className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch px-1 py-0"
+          className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch rounded-md px-1 py-0 text-white hover:bg-[#083A4A] hover:text-white"
           onClick={() => handleOrientationChange('coronal')}
         >
           <div className="mr-1 flex w-6 items-center justify-start">
             {currentOrientation === 'coronal' ? (
-              <Icons.Checked className="text-primary h-6 w-6" />
+              <Icons.Checked className="h-6 w-6 text-[#48FFF6]" />
             ) : null}
           </div>
-          <div className="flex-1 text-left">Coronal</div>
+          <div className="flex-1 text-left text-[#BFFBFF]">Coronal</div>
         </Button>
         <Button
           variant="ghost"
-          className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch px-1 py-0"
+          className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch rounded-md px-1 py-0 text-white hover:bg-[#083A4A] hover:text-white"
           onClick={() => handleOrientationChange('acquisition')}
         >
           <div className="mr-1 flex w-6 items-center justify-start">
             {currentOrientation === 'acquisition' ? (
-              <Icons.Checked className="text-primary h-6 w-6" />
+              <Icons.Checked className="h-6 w-6 text-[#48FFF6]" />
             ) : null}
           </div>
-          <div className="flex-1 text-left">Acquisition</div>
+          <div className="flex-1 text-left text-[#BFFBFF]">Acquisition</div>
         </Button>
         {/* Divider */}
-        <div className="mx-1 my-2 border-t border-white/20" />
+        <div className="mx-1 my-2 border-t border-[#48FFF6]/15" />
         <Button
           variant="ghost"
-          className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch px-1 py-0"
+          className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch rounded-md px-1 py-0 text-white hover:bg-[#083A4A] hover:text-white"
           onClick={() => handleOrientationChange('reformat')}
         >
           <div className="mr-1 flex w-6 items-center justify-start">
             {currentOrientation === 'reformat' ? (
-              <Icons.Checked className="text-primary h-6 w-6" />
+              <Icons.Checked className="h-6 w-6 text-[#48FFF6]" />
             ) : null}
           </div>
-          <div className="flex-1 text-left">Reformat</div>
+          <div className="flex-1 text-left text-[#BFFBFF]">Reformat</div>
         </Button>
       </PopoverContent>
     </Popover>

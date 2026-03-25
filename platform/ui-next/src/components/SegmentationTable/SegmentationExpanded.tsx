@@ -19,7 +19,7 @@ const SegmentationExpandedHeader = ({ children }: { children: React.ReactNode })
 
   return (
     <PanelSection.Header
-      className={`bg-[#083A4A] border border-[#FFFFFF1A] my-0 rounded-none border-l-[2px] pl-0 hover:bg-[#0A4A5A] transition-colors ${isActive ? 'border-[#48FFF6] bg-[#083A4A]' : 'border-[#48FFF6]/35'}`}
+      className={`bg-[#083A4A] border border-[#FFFFFF1A] my-0 rounded-none border-l-[2px] pl-0 hover:bg-[#0A4A5A] transition-colors [&>svg]:!text-[#48FFF6] ${isActive ? 'border-[#48FFF6] bg-[#083A4A]' : 'border-[#48FFF6]/35'}`}
       onClick={e => {
         e.stopPropagation();
         onSegmentationClick(segmentation.segmentationId);

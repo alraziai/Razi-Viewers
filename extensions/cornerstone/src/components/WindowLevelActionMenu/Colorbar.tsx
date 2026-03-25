@@ -12,7 +12,7 @@ export function Colorbar({ viewportId }: { viewportId?: string } = {}): ReactEle
   }, [toggleColorbar]);
 
   return (
-    <div className="hover:bg-accent flex h-8 w-full flex-shrink-0 cursor-pointer items-center px-2 text-base hover:rounded">
+    <div className="flex h-8 w-full flex-shrink-0 cursor-pointer items-center rounded px-2 text-base transition-colors hover:bg-[#083A4A]">
       <div className="flex w-7 flex-shrink-0 items-center justify-center"></div>
       <span
         className="flex-grow"

@@ -11,7 +11,7 @@ window.config = {
   strictZSpacingForVolumeViewport: true,
   // filterQueryParam: false,
   // Report API configuration
-  reportApiBaseUrl: 'http://35.188.151.244',
+  reportApiBaseUrl: 'https://api.alrazi.ai',
   reportApiPath: '/api/diagnosis',
   defaultDataSourceName: 'orthanc',
   dataSources: [
@@ -21,9 +21,9 @@ window.config = {
       configuration: {
         friendlyName: 'local Orthanc DICOMWeb Server',
         name: 'DCM4CHEE',
-        wadoUriRoot: 'http://35.188.151.244/orthanc/dicom-web',
-        qidoRoot: 'http://35.188.151.244/orthanc/dicom-web',
-        wadoRoot: 'http://35.188.151.244/orthanc/dicom-web',
+        wadoUriRoot: 'https://api.alrazi.ai/orthanc/dicom-web',
+        qidoRoot: 'https://api.alrazi.ai/orthanc/dicom-web',
+        wadoRoot: 'https://api.alrazi.ai/orthanc/dicom-web',
         qidoSupportsIncludeField: true,
         supportsReject: true,
         dicomUploadEnabled: true,
@@ -43,7 +43,7 @@ window.config = {
           // "BulkDataURI" : "http://localhost/dicom-web/studies/1.2.276.0.7230010.3.1.2.2344313775.14992.1458058363.6979/series/1.2.276.0.7230010.3.1.3.1901948703.36080.1484835349.617/instances/1.2.276.0.7230010.3.1.4.1901948703.36080.1484835349.618/bulk/00420011",
           // when running on http://localhost:3003 with no server running on localhost.  This can be corrected to:
           // /orthanc/dicom-web/studies/1.2.276.0.7230010.3.1.2.2344313775.14992.1458058363.6979/series/1.2.276.0.7230010.3.1.3.1901948703.36080.1484835349.617/instances/1.2.276.0.7230010.3.1.4.1901948703.36080.1484835349.618/bulk/00420011
-          // which is a valid relative URL, and will result in using the http://localhost:3003/orthanc/.... path
+          // which is a valid relative URL, and will result in using the https://35.188.151.244/orthanc/.... path
           // startsWith: 'http://localhost/',
           // prefixWith: '/orthanc/',
         },

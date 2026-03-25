@@ -350,11 +350,10 @@ function ViewportAIOverlaysMenu({
         </div>
       </PopoverTrigger>
       <PopoverContent
-        className="h-auto w-[250px] max-h-[400px] overflow-y-auto flex-shrink-0 flex-col items-start rounded p-1"
+        className="h-auto w-[250px] max-h-[400px] flex-shrink-0 flex-col items-start overflow-y-auto rounded-lg border border-[#48FFF6]/20 p-1 shadow-md"
         align={align}
         side={side}
         style={{
-          background: "linear-gradient(90deg, #102b40ff 0%, #102b40ff 100%)",
           left: 0
         }}
       >
@@ -369,17 +368,17 @@ function ViewportAIOverlaysMenu({
             <Button
               key={layer.id}
               variant="ghost"
-              className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch px-1 py-0"
+              className="flex h-7 w-full flex-shrink-0 items-center justify-start self-stretch rounded-md px-1 py-0 text-white hover:bg-[#083A4A] hover:text-white"
               onClick={() => handleToggle(layer.id)}
             >
               <div className="mr-1 flex w-6 items-center justify-start">
                 {enabled[layer.id] ? (
-                  <Icons.Checked className="text-primary h-6 w-6" />
+                  <Icons.Checked className="h-6 w-6 text-[#48FFF6]" />
                 ) : (
                   <div className="h-6 w-6" />
                 )}
               </div>
-              <div className="flex-1 text-left text-xs">{layer.label}</div>
+              <div className="flex-1 text-left text-xs text-[#BFFBFF]">{layer.label}</div>
             </Button>
           ))
         )}

@@ -17,10 +17,10 @@ export function VolumeRenderingOptions({ viewportId }: { viewportId?: string } =
       />
       <VolumeShift viewportId={viewportId} />
       <div className="mt-2 flex h-8 !h-[20px] w-full flex-shrink-0 items-center justify-start px-2 text-base">
-        <div className="text-muted-foreground text-sm">Lighting</div>
+        <div className="text-sm text-white/60">Lighting</div>
       </div>
-      <div className="bg-background mt-1 mb-1 h-px w-full"></div>
-      <div className="hover:bg-accent flex h-8 w-full flex-shrink-0 items-center px-2 text-base hover:rounded">
+      <div className="mt-1 mb-1 h-px w-full bg-[#48FFF6]/15"></div>
+      <div className="flex h-8 w-full flex-shrink-0 items-center rounded px-2 text-base transition-colors hover:bg-[#083A4A]">
         <VolumeShade
           viewportId={viewportId}
           onClickShade={setShade}

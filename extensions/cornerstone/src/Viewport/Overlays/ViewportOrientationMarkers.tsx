@@ -80,7 +80,7 @@ function ViewportOrientationMarkers({
         className={classNames(
           'overlay-text',
           `${m}-mid orientation-marker`,
-          isLight ? 'text-neutral-dark/70' : 'text-neutral-light/70',
+          isLight ? 'text-neutral-dark/70' : 'text-[#BFFBFF]/80',
           isLight ? 'shadow-light' : 'shadow-dark',
           'text-base',
           'leading-5'

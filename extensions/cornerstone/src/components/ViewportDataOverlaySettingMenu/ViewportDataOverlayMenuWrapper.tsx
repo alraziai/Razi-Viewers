@@ -74,7 +74,7 @@ export function ViewportDataOverlayMenuWrapper(props: DataOverlayMenuProps): Rea
         </div>
       </PopoverTrigger>
       <PopoverContent
-        className="border-none bg-transparent p-0 shadow-none"
+        className="!w-auto !border-none !bg-transparent !p-0 !shadow-none"
         side={side}
         align={align}
         alignOffset={0}
